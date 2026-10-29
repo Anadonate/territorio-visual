@@ -78,9 +78,54 @@
           <div class="screen-heading"><p class="eyebrow"><span>02</span> MIRAR ALREDEDOR</p><h2 id="sample-title" tabindex="-1">¿Qué códigos ves <em>en tu categoría?</em></h2><p class="screen-intro">Reúne unas pocas referencias visuales. La URL orienta la búsqueda; los colores se revisan manualmente.</p></div>
           <div class="sample-note"><span class="sample-note-icon">i</span><p><strong>Una muestra, no todo el mercado.</strong> Trabajaremos con hasta tres marcas que tú elijas. No leeremos automáticamente sus webs.</p></div>
           <div class="competitor-grid">
-            <article class="competitor-card"><span class="card-number">01</span><div class="competitor-placeholder"><span>+</span></div><p class="eyebrow">REFERENCIA 01</p><h3>Una marca de tu categoría</h3><div class="placeholder-lines"><i></i><i></i></div><div class="swatch-placeholder"><b></b><b></b><b></b><span>COLORES A CONFIRMAR</span></div></article>
-            <article class="competitor-card"><span class="card-number">02</span><div class="competitor-placeholder"><span>+</span></div><p class="eyebrow">REFERENCIA 02</p><h3>Otra forma de expresarse</h3><div class="placeholder-lines"><i></i><i></i></div><div class="swatch-placeholder"><b></b><b></b><b></b><span>COLORES A CONFIRMAR</span></div></article>
-            <article class="competitor-card"><span class="card-number">03</span><div class="competitor-placeholder"><span>+</span></div><p class="eyebrow">REFERENCIA 03 · OPCIONAL</p><h3>Una referencia más</h3><div class="placeholder-lines"><i></i><i></i></div><div class="swatch-placeholder"><b></b><b></b><b></b><span>COLORES A CONFIRMAR</span></div></article>
+            <article class="competitor-card">
+              <span class="card-number">01</span>
+              <div class="competitor-placeholder" aria-hidden="true"><strong>01</strong><span>MARCA / REFERENCIA VISUAL</span></div>
+              <p class="eyebrow">REFERENCIA 01</p>
+              <label class="reference-field" for="reference-name-1">Nombre de la marca
+                <input id="reference-name-1" name="reference-name-1" type="text" placeholder="Ej. Marca de cosmética" autocomplete="off">
+              </label>
+              <form class="reference-form" data-reference-form novalidate>
+                <label class="reference-field" for="reference-url-1">Enlace de su web
+                  <span class="reference-control"><input id="reference-url-1" name="reference-url-1" type="url" inputmode="url" placeholder="https://marca.com" autocomplete="url" aria-describedby="reference-status-1"><button type="submit">Añadir enlace</button></span>
+                </label>
+                <p class="reference-status" id="reference-status-1" data-reference-status role="status" aria-live="polite">Opcional · la web no se analizará automáticamente.</p>
+                <a class="reference-link" data-reference-link href="#" target="_blank" rel="noopener noreferrer" hidden>Abrir referencia ↗</a>
+              </form>
+              <div class="swatch-placeholder" aria-label="Colores pendientes de revisión"><b></b><b></b><b></b><span>COLORES A CONFIRMAR</span></div>
+            </article>
+            <article class="competitor-card">
+              <span class="card-number">02</span>
+              <div class="competitor-placeholder" aria-hidden="true"><strong>02</strong><span>MARCA / REFERENCIA VISUAL</span></div>
+              <p class="eyebrow">REFERENCIA 02</p>
+              <label class="reference-field" for="reference-name-2">Nombre de la marca
+                <input id="reference-name-2" name="reference-name-2" type="text" placeholder="Ej. Marca de cuidado facial" autocomplete="off">
+              </label>
+              <form class="reference-form" data-reference-form novalidate>
+                <label class="reference-field" for="reference-url-2">Enlace de su web
+                  <span class="reference-control"><input id="reference-url-2" name="reference-url-2" type="url" inputmode="url" placeholder="https://marca.com" autocomplete="url" aria-describedby="reference-status-2"><button type="submit">Añadir enlace</button></span>
+                </label>
+                <p class="reference-status" id="reference-status-2" data-reference-status role="status" aria-live="polite">Opcional · la web no se analizará automáticamente.</p>
+                <a class="reference-link" data-reference-link href="#" target="_blank" rel="noopener noreferrer" hidden>Abrir referencia ↗</a>
+              </form>
+              <div class="swatch-placeholder" aria-label="Colores pendientes de revisión"><b></b><b></b><b></b><span>COLORES A CONFIRMAR</span></div>
+            </article>
+            <article class="competitor-card">
+              <span class="card-number">03</span>
+              <div class="competitor-placeholder" aria-hidden="true"><strong>03</strong><span>MARCA / REFERENCIA VISUAL</span></div>
+              <p class="eyebrow">REFERENCIA 03 · OPCIONAL</p>
+              <label class="reference-field" for="reference-name-3">Nombre de la marca
+                <input id="reference-name-3" name="reference-name-3" type="text" placeholder="Ej. Otra referencia" autocomplete="off">
+              </label>
+              <form class="reference-form" data-reference-form novalidate>
+                <label class="reference-field" for="reference-url-3">Enlace de su web
+                  <span class="reference-control"><input id="reference-url-3" name="reference-url-3" type="url" inputmode="url" placeholder="https://marca.com" autocomplete="url" aria-describedby="reference-status-3"><button type="submit">Añadir enlace</button></span>
+                </label>
+                <p class="reference-status" id="reference-status-3" data-reference-status role="status" aria-live="polite">Opcional · la web no se analizará automáticamente.</p>
+                <a class="reference-link" data-reference-link href="#" target="_blank" rel="noopener noreferrer" hidden>Abrir referencia ↗</a>
+              </form>
+              <div class="swatch-placeholder" aria-label="Colores pendientes de revisión"><b></b><b></b><b></b><span>COLORES A CONFIRMAR</span></div>
+            </article>
           </div>
           <p class="quiet-caption"><span class="tiny-star">✳</span> Puedes continuar con menos referencias. La lectura será más acotada.</p>
         </section>
