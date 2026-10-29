@@ -14,7 +14,8 @@
   const stepNames = ['Contexto', 'Referencias', 'Mapa cromático', 'Territorios', 'Informe'];
   const brandData = new Map(brandCards.map((card) => [card.dataset.brandId, {
     name: '', url: '', image: null, previewUrl: '', fileName: '',
-    includeBackground: false, background: null, colors: [], confirmed: false,
+    includeBackground: false, backgroundChoice: null, background: null, backgroundConfidence: 'ninguna',
+    colors: [], extracted: [], dismissedExtracted: new Set(), secondary: [], confirmed: false,
   }]));
   let currentStep = 1;
 
@@ -86,32 +87,31 @@
     link.addEventListener('click', () => showStep(Number(link.dataset.goStep)));
   });
   const sourceOptions = [
-    ['logo', 'Logotipo · extracción local'],
-    ['manual', 'Manual de identidad'],
-    ['official', 'Packaging / activo oficial'],
-    ['estimate', 'Estimación visual manual'],
-    ['campaign', 'Campaña temporal'],
+    ['logo', 'Extraído del logotipo'],
+    ['manual', 'Introducido manualmente'],
+    ['official', 'Fuente oficial indicada por mí'],
+    ['campaign', 'Color de campaña'],
   ];
   const allowedHex = /^#[\da-f]{6}$/i;
 
   function sourceDescription(color, brand) {
     const source = color.source;
     if (source === 'logo') return color.wasEdited
-      ? `Ajuste manual del tono extraído · método inicial OKLab · confianza: estimación visual, no oficial.`
-      : `Logotipo aportado una vez · extracción y agrupación local OKLab · confianza: estimación visual, no color oficial verificado.`;
-    if (source === 'manual') return `Fuente declarada por el usuario: ${color.sourceNote} · confianza: documento no verificado automáticamente.`;
-    if (source === 'official') return `Activo oficial declarado: ${color.sourceNote} · confianza: fuente referida por el usuario, no contrastada por la aplicación.`;
+      ? `HEX ajustado por ti · origen inicial: logotipo · estimación visual, no color oficial verificado.`
+      : `Extraído localmente del logotipo · estimación visual, no color oficial verificado.`;
+    if (source === 'manual') return `Añadido manualmente por ti · no se ha verificado como color corporativo.`;
+    if (source === 'official') return `Fuente oficial indicada por ti: ${color.sourceNote || 'sin referencia detallada'} · la aplicación no la verifica.`;
     if (source === 'campaign') return `Campaña/temporada: ${color.sourceNote} · confianza: contexto declarado · fuera de la comparación estable.`;
-    return `Estimación visual manual: ${color.sourceNote} · confianza: orientativa.`;
+    return `Procedencia indicada: ${color.sourceNote || 'sin detallar'} · interpretación orientativa.`;
   }
 
   function markPaletteUnconfirmed(brand, card) {
     brand.confirmed = false;
     card.querySelector('[data-confirmation]').hidden = true;
-    card.querySelector('[data-confirm-brand]').disabled = brand.colors.length === 0;
+    card.querySelector('[data-confirm-brand]').disabled = !brand.colors.some((color) => allowedHex.test(color.hex));
   }
 
-  function makeColorRow(color, index, brand, card) {
+  function makeColorRow(color, index, brand, card, group = 'extracted') {
     const row = document.createElement('div');
     row.className = 'palette-row';
     row.dataset.colorId = color.id;
@@ -141,14 +141,27 @@
     note.placeholder = color.source === 'logo' ? 'Archivo de origen' : 'Indica fuente, página o campaña';
     note.setAttribute('aria-label', `Detalle de la fuente del color ${index + 1}`);
     note.setAttribute('data-color-source-note', '');
-    note.required = color.source !== 'logo';
-    note.hidden = color.source === 'logo';
+    note.required = color.source === 'official';
+    note.hidden = color.source !== 'official';
     const remove = document.createElement('button');
     remove.className = 'remove-color'; remove.type = 'button'; remove.textContent = 'Quitar';
     remove.setAttribute('aria-label', `Eliminar el color ${color.hex}`); remove.setAttribute('data-remove-color', '');
     const details = document.createElement('p'); details.className = 'color-provenance';
-    details.textContent = sourceDescription(color, brand);
-    row.append(pickerLabel, hexLabel, sourceLabel, note, remove, details);
+    const classification = allowedHex.test(color.hex) && window.TerritorioColor.toOklch(color.hex).h === null ? 'Neutro · ' : 'Color cromático · ';
+    details.textContent = `${classification}${sourceDescription(color, brand)}`;
+    row.dataset.colorGroup = group;
+    row.append(pickerLabel, hexLabel, sourceLabel, note);
+    if (group === 'extracted') {
+      const backgroundPending = brand.background && brand.backgroundConfidence !== 'alta' && !brand.backgroundChoice;
+      const use = document.createElement('button'); use.type = 'button'; use.className = 'use-extracted-color';
+      use.textContent = 'Usar como principal'; use.setAttribute('data-use-primary', '');
+      use.disabled = !allowedHex.test(color.hex) || brand.colors.length >= 3 || backgroundPending;
+      const secondary = document.createElement('button'); secondary.type = 'button'; secondary.className = 'use-extracted-color';
+      secondary.textContent = color.kind === 'neutral' ? 'Guardar como neutro' : 'Guardar como secundario'; secondary.setAttribute('data-use-secondary', '');
+      secondary.disabled = backgroundPending;
+      row.append(use, secondary);
+    }
+    row.append(remove, details);
     row._color = color;
     return row;
   }
@@ -157,18 +170,55 @@
     const brand = brandData.get(card.dataset.brandId);
     const list = card.querySelector('[data-palette-list]');
     list.replaceChildren();
-    if (!brand.colors.length) {
+    if (!brand.extracted.length) {
       const empty = document.createElement('p'); empty.className = 'palette-empty';
-      empty.textContent = 'La paleta aparecerá aquí para que la revises.'; list.append(empty);
+      empty.textContent = 'No hay colores detectados. Puedes crear la paleta manualmente arriba.'; list.append(empty);
     }
-    brand.colors.forEach((color, index) => list.append(makeColorRow(color, index, brand, card)));
-    card.querySelector('[data-confirm-brand]').disabled = brand.colors.length === 0;
+    brand.extracted.forEach((color, index) => list.append(makeColorRow(color, index, brand, card, 'extracted')));
+    card.querySelector('[data-clear-extracted]').hidden = !brand.extracted.length;
+    renderPrimary(card);
+    renderSecondary(card);
+    card.querySelector('[data-confirm-brand]').disabled = !brand.colors.some((color) => allowedHex.test(color.hex));
     markPaletteUnconfirmed(brand, card);
+  }
+
+  function renderPrimary(card) {
+    const brand = brandData.get(card.dataset.brandId);
+    const list = card.querySelector('[data-primary-list]'); list.replaceChildren();
+    for (let index = 0; index < brand.colors.length; index += 1) {
+      const color = brand.colors[index];
+      const slot = document.createElement('div'); slot.className = 'primary-slot';
+      const number = document.createElement('span'); number.className = 'primary-slot-number'; number.textContent = `0${index + 1}`;
+      const label = document.createElement('strong'); label.textContent = index < 2 ? `Principal ${index + 1}` : 'Principal adicional';
+      const row = makeColorRow(color, index, brand, card, 'primary');
+      slot.append(number, label, row); list.append(slot);
+    }
+    if (!brand.colors.length) { const note = document.createElement('p'); note.className = 'palette-empty'; note.textContent = 'Elige sugerencias de abajo o añade aquí tus colores principales.'; list.append(note); }
+    card.querySelector('[data-primary-count]').textContent = `${brand.colors.length} de 2 recomendados · máximo 3`;
+    card.querySelector('[data-add-primary]').disabled = brand.colors.length >= 3;
+    const backgroundPending = brand.background && brand.backgroundConfidence !== 'alta' && !brand.backgroundChoice;
+    card.querySelectorAll('[data-use-primary]').forEach((button) => { button.disabled = brand.colors.length >= 3 || backgroundPending; });
+  }
+
+  function renderSecondary(card) {
+    const brand = brandData.get(card.dataset.brandId); const list = card.querySelector('[data-secondary-list]'); list.replaceChildren();
+    const neutralColors = brand.secondary.filter((color) => color.kind === 'neutral');
+    const secondaryColors = brand.secondary.filter((color) => color.kind !== 'neutral');
+    [[secondaryColors, 'Colores secundarios'], [neutralColors, 'Neutros · blanco, negro y grises']].forEach(([colors, title]) => {
+      const group = document.createElement('section'); group.className = 'secondary-color-group';
+      const heading = document.createElement('h4'); heading.textContent = title;
+      const entries = document.createElement('div'); entries.className = 'secondary-color-entries';
+      if (!colors.length) { const empty = document.createElement('p'); empty.className = 'palette-empty'; empty.textContent = 'Sin colores añadidos.'; entries.append(empty); }
+      colors.forEach((color, index) => entries.append(makeColorRow(color, index, brand, card, 'secondary')));
+      group.append(heading, entries); list.append(group);
+    });
   }
 
   function updateColorRow(row, card) {
     const brand = brandData.get(card.dataset.brandId);
-    const color = brand.colors.find((item) => item.id === row.dataset.colorId);
+    const group = row.dataset.colorGroup;
+    const collection = group === 'extracted' ? brand.extracted : group === 'secondary' ? brand.secondary : brand.colors;
+    const color = collection.find((item) => item.id === row.dataset.colorId);
     if (!color) return;
     const selectedSource = row.querySelector('[data-color-source]').value;
     if (selectedSource !== color.source) {
@@ -177,15 +227,16 @@
       note.hidden = selectedSource === 'logo';
     }
     color.hex = row.querySelector('[data-color-hex]').value.trim().toUpperCase();
+    color.kind = allowedHex.test(color.hex) && window.TerritorioColor.toOklch(color.hex).h === null ? 'neutral' : 'chromatic';
     color.wasEdited = color.originalHex ? color.hex !== color.originalHex : true;
     if (color.wasEdited) color.share = null;
     color.source = selectedSource;
     color.sourceNote = row.querySelector('[data-color-source-note]').value.trim();
     row.querySelector('[data-color-picker]').value = allowedHex.test(color.hex) ? color.hex : '#FFFFFF';
     row.querySelector('[data-color-hex]').setAttribute('aria-invalid', String(!allowedHex.test(color.hex)));
-    row.querySelector('[data-color-source-note]').required = color.source !== 'logo';
-    row.querySelector('[data-color-source-note]').hidden = color.source === 'logo';
-    row.querySelector('[data-color-source-note]').placeholder = color.source === 'logo' ? 'Archivo de origen' : 'Indica fuente, página o campaña';
+    row.querySelector('[data-color-source-note]').required = color.source === 'official';
+    row.querySelector('[data-color-source-note]').hidden = color.source !== 'official';
+    row.querySelector('[data-color-source-note]').placeholder = color.source === 'official' ? 'Título o enlace de la fuente oficial' : 'Procedencia';
     row.querySelector('.color-provenance').textContent = sourceDescription(color, brand);
     markPaletteUnconfirmed(brand, card);
   }
@@ -206,23 +257,45 @@
 
     async function extractCurrentLogo() {
       try {
-        const result = window.TerritorioColor.extractColors(brand.image, brand.includeBackground);
+        const result = window.TerritorioColor.extractColors(brand.image, brand.includeBackground ? 'include' : (brand.backgroundChoice || 'auto'));
         brand.background = result.background;
-        brand.colors = result.colors.map((item, index) => ({
+        brand.backgroundConfidence = result.backgroundConfidence;
+        const previousExtracted = new Map(brand.extracted.map((color) => [color.originalHex, color]));
+        brand.extracted = result.colors.filter((item) => !brand.dismissedExtracted.has(item.hex)).map((item, index) => {
+          const previous = previousExtracted.get(item.hex);
+          return previous ? { ...previous, share: item.share } : ({
           id: `${card.dataset.brandId}-logo-${Date.now()}-${index}`,
           hex: item.hex, originalHex: item.hex, wasEdited: false, source: 'logo', sourceNote: '',
-          share: item.share, method: 'Extracción local y agrupación perceptual OKLab',
-        }));
-        backgroundControl.hidden = !result.background;
+          share: item.share, method: 'Extracción local y agrupación perceptual OKLab', kind: window.TerritorioColor.toOklch(item.hex).h === null ? 'neutral' : 'chromatic',
+          });
+        });
+        backgroundControl.hidden = !result.background && !result.backgroundTransparent && !result.semitransparentRatio;
         card.querySelector('[data-background-hex]').textContent = result.background || '';
         card.querySelector('[data-include-background]').checked = brand.includeBackground;
-        status.textContent = result.background
-          ? `Se detectó un fondo uniforme (${result.background}); se excluye por defecto. Revisa si forma parte del logotipo.`
-          : `Extracción estimada desde ${brand.fileName}. El fondo no parece uniforme o transparente.`;
+        const summary = card.querySelector('[data-background-summary]');
+        const decision = card.querySelector('[data-background-decision]');
+        const toggle = card.querySelector('[data-background-toggle]');
+        decision.hidden = !result.background || result.backgroundConfidence === 'alta';
+        toggle.hidden = result.backgroundConfidence !== 'alta';
+        card.querySelectorAll('[data-background-decision] input').forEach((input) => { input.checked = input.value === brand.backgroundChoice; });
+        const alphaNote = result.backgroundTransparent
+          ? 'Se conserva la transparencia real del archivo.'
+          : result.semitransparentRatio > 0.01
+            ? `Los píxeles semitransparentes (${Math.round(result.semitransparentRatio * 100)} %) se ponderan para reducir halos.`
+            : '';
+        const backgroundNote = result.background ? `Fondo estimado en bordes: ${result.background} · confianza ${result.backgroundConfidence}.` : 'No se detectó un fondo opaco fiable.';
+        summary.textContent = [backgroundNote, alphaNote].filter(Boolean).join(' ');
+        status.textContent = result.background && result.backgroundConfidence === 'alta'
+          ? `El fondo de borde (${result.background}) se excluye por defecto; puedes incluirlo como candidato si pertenece al logotipo.`
+          : result.background
+            ? `La imagen tiene un posible fondo (${result.background}), pero no se distingue con suficiente seguridad. Confirma si es fondo o parte del logotipo.`
+            : result.backgroundTransparent
+              ? `Se conserva la transparencia real del archivo. Los píxeles semitransparentes (${Math.round(result.semitransparentRatio * 100)} %) se ponderan para reducir halos; no se invierten los colores.`
+            : `No se detectó un fondo fiable en ${brand.fileName}. Revisa las sugerencias, especialmente si el archivo tiene fondo complejo.`;
         status.dataset.state = 'success';
         renderPalette(card);
       } catch (error) {
-        brand.colors = [];
+        brand.extracted = [];
         renderPalette(card);
         status.textContent = error.message;
         status.dataset.state = 'error';
@@ -241,7 +314,8 @@
         brand.image = loaded.image;
         brand.previewUrl = loaded.previewUrl;
         brand.fileName = file.name;
-        brand.includeBackground = false;
+        brand.includeBackground = false; brand.backgroundChoice = null;
+        brand.extracted = []; brand.dismissedExtracted = new Set(); brand.colors = []; brand.secondary = []; brand.confirmed = false;
         const preview = card.querySelector('[data-logo-preview]');
         const image = document.createElement('img'); image.src = loaded.previewUrl; image.alt = `Vista previa del logotipo ${file.name}`;
         preview.replaceChildren(image); preview.classList.add('has-logo');
@@ -261,6 +335,11 @@
       brand.includeBackground = event.currentTarget.checked;
       extractCurrentLogo();
     });
+    card.querySelectorAll('[data-background-decision] input').forEach((input) => input.addEventListener('change', () => {
+      brand.backgroundChoice = input.value;
+      brand.includeBackground = input.value === 'include';
+      extractCurrentLogo();
+    }));
     card.querySelector('[data-brand-name]').addEventListener('input', (event) => {
       brand.name = event.currentTarget.value.trim();
       markPaletteUnconfirmed(brand, card);
@@ -275,35 +354,69 @@
       input.value = normalized; input.removeAttribute('aria-invalid'); link.href = normalized; link.hidden = false;
       brand.url = normalized; status.textContent = 'Enlace añadido. No leeremos esta web ni usaremos sus colores.'; status.dataset.state = 'success';
     });
-    card.querySelector('[data-add-color]').addEventListener('click', () => {
-      brand.colors.push({ id: `${card.dataset.brandId}-manual-${Date.now()}`, hex: '', source: 'estimate', sourceNote: '', share: null, method: 'Introducción manual por el usuario' });
-      renderPalette(card);
-      const note = card.querySelector('[data-color-source-note]:last-of-type');
-      if (note) note.focus();
+    card.querySelector('[data-add-primary]').addEventListener('click', () => {
+      if (brand.colors.length >= 3) return;
+      brand.colors.push({ id: `${card.dataset.brandId}-primary-${Date.now()}`, hex: '', originalHex: '', wasEdited: true, source: 'manual', sourceNote: '', share: null, method: 'Introducido manualmente' });
+      renderPalette(card); card.querySelector('[data-color-hex]:last-of-type')?.focus();
+    });
+    card.querySelector('[data-add-secondary]').addEventListener('click', () => {
+      brand.secondary.push({ id: `${card.dataset.brandId}-secondary-${Date.now()}`, hex: '', source: 'manual', sourceNote: '', share: null }); renderPalette(card); card.querySelector('[data-color-hex]:last-of-type')?.focus();
+    });
+    card.querySelector('[data-add-neutral]').addEventListener('click', () => {
+      brand.secondary.push({ id: `${card.dataset.brandId}-neutral-${Date.now()}`, hex: '', source: 'manual', sourceNote: '', kind: 'neutral', share: null }); renderPalette(card); card.querySelector('[data-color-hex]:last-of-type')?.focus();
+    });
+    card.querySelector('[data-clear-extracted]').addEventListener('click', () => {
+      brand.extracted.forEach((color) => brand.dismissedExtracted.add(color.originalHex)); brand.extracted = []; renderPalette(card);
+    });
+    card.querySelector('[data-palette-list]').addEventListener('click', (event) => {
+      const row = event.target.closest('.palette-row'); if (!row) return;
+      const color = brand.extracted.find((item) => item.id === row.dataset.colorId); if (!color) return;
+      if (event.target.closest('[data-use-primary]')) {
+        if (brand.colors.length >= 3 || !allowedHex.test(color.hex)) return;
+        brand.colors.push({ ...color, id: `${card.dataset.brandId}-primary-${Date.now()}`, originalHex: color.hex, wasEdited: false, fromExtracted: color.id });
+        renderPalette(card); return;
+      }
+      if (event.target.closest('[data-use-secondary]')) {
+        if (!allowedHex.test(color.hex) || brand.secondary.some((item) => item.fromExtracted === color.id)) return;
+        brand.secondary.push({ ...color, id: `${card.dataset.brandId}-secondary-${Date.now()}`, originalHex: color.hex, fromExtracted: color.id });
+        renderPalette(card); return;
+      }
+      if (event.target.closest('[data-remove-color]')) { brand.dismissedExtracted.add(color.originalHex); brand.extracted = brand.extracted.filter((item) => item.id !== color.id); renderPalette(card); }
     });
     card.querySelector('[data-confirm-brand]').addEventListener('click', () => {
       const name = card.querySelector('[data-brand-name]');
       if (!name.value.trim()) { status.textContent = 'Añade el nombre de la marca antes de confirmar.'; status.dataset.state = 'error'; name.focus(); return; }
-      const rows = [...card.querySelectorAll('.palette-row')];
-      const invalid = rows.find((row) => !allowedHex.test(row.querySelector('[data-color-hex]').value.trim())
-        || (row.querySelector('[data-color-source]').value !== 'logo' && !row.querySelector('[data-color-source-note]').value.trim()));
+       const rows = [...card.querySelectorAll('.palette-row[data-color-group="primary"]')];
+       const invalid = rows.find((row) => !allowedHex.test(row.querySelector('[data-color-hex]').value.trim())
+         || (row.querySelector('[data-color-source]').value === 'official' && !row.querySelector('[data-color-source-note]').value.trim()));
+       const undecidedBackground = brand.background && brand.backgroundConfidence !== 'alta' && !brand.backgroundChoice;
+       if (undecidedBackground) {
+         status.textContent = 'Confirma si el color detectado en el borde es fondo del archivo o parte del logotipo.'; status.dataset.state = 'error';
+         card.querySelector('[data-background-decision]').scrollIntoView({ block: 'center', behavior: 'smooth' });
+         card.querySelector('[data-background-decision] input').focus(); return;
+       }
       if (invalid) {
-        status.textContent = 'Revisa los códigos HEX e indica la fuente de cada color manual.'; status.dataset.state = 'error';
+         status.textContent = 'Revisa los códigos HEX. Para indicar una fuente oficial, añade su título o enlace.'; status.dataset.state = 'error';
         invalid.querySelector('[data-color-hex]').focus(); return;
       }
       brand.name = name.value.trim();
-      brand.colors = rows.map((row) => {
+       brand.colors = rows.map((row) => {
         const color = row._color;
         color.hex = row.querySelector('[data-color-hex]').value.trim().toUpperCase();
         color.wasEdited = color.originalHex ? color.hex !== color.originalHex : true;
         color.source = row.querySelector('[data-color-source]').value;
         color.sourceNote = row.querySelector('[data-color-source-note]').value.trim();
-        if (color.source !== 'logo' || color.wasEdited) color.share = null;
-        color.method = color.source === 'logo' ? 'Extracción local y agrupación perceptual OKLab' : 'Color introducido y clasificado manualmente';
+         if (color.source !== 'logo' || color.wasEdited) color.share = null;
+         color.method = color.source === 'logo' ? 'Extracción local y agrupación perceptual OKLab' : 'Introducido y clasificado por el usuario';
         color.oklch = window.TerritorioColor.toOklch(color.hex);
         return color;
       });
-      brand.confirmed = true;
+       brand.secondary = [...card.querySelectorAll('.palette-row[data-color-group="secondary"]')].map((row) => {
+         const color = brand.secondary.find((item) => item.id === row.dataset.colorId) || row._color;
+         color.hex = row.querySelector('[data-color-hex]').value.trim().toUpperCase(); color.source = row.querySelector('[data-color-source]').value;
+         color.sourceNote = row.querySelector('[data-color-source-note]').value.trim(); color.oklch = allowedHex.test(color.hex) ? window.TerritorioColor.toOklch(color.hex) : null; return color;
+       }).filter((color) => allowedHex.test(color.hex));
+       brand.confirmed = true;
       card.querySelector('[data-confirmation]').hidden = false;
       const sampleFeedback = document.querySelector('[data-sample-feedback]');
       sampleFeedback.hidden = true;
@@ -313,19 +426,30 @@
     });
     card.addEventListener('input', (event) => {
       const row = event.target.closest('.palette-row');
-      if (!row || event.target.matches('[data-color-source]')) return;
+       if (!row || event.target.matches('[data-color-source]')) return;
       if (event.target.matches('[data-color-picker]')) row.querySelector('[data-color-hex]').value = event.target.value.toUpperCase();
       updateColorRow(row, card);
+      if (row.dataset.colorGroup === 'extracted') renderPrimary(card);
     });
     card.addEventListener('change', (event) => {
-      const row = event.target.closest('.palette-row');
-      if (row) updateColorRow(row, card);
+       const row = event.target.closest('.palette-row');
+       if (row) {
+         updateColorRow(row, card);
+         if (row.dataset.colorGroup === 'extracted') renderPrimary(card);
+         if (row.dataset.colorGroup === 'secondary') renderSecondary(card);
+       }
     });
     card.addEventListener('click', (event) => {
-      const remove = event.target.closest('[data-remove-color]');
+       const remove = event.target.closest('[data-remove-color]');
       if (!remove) return;
       const row = remove.closest('.palette-row');
-      brand.colors = brand.colors.filter((color) => color.id !== row.dataset.colorId);
+       const group = row.dataset.colorGroup;
+       if (group === 'extracted') {
+         const color = brand.extracted.find((item) => item.id === row.dataset.colorId); if (color) brand.dismissedExtracted.add(color.originalHex);
+         brand.extracted = brand.extracted.filter((color) => color.id !== row.dataset.colorId);
+       }
+       else if (group === 'secondary') brand.secondary = brand.secondary.filter((color) => color.id !== row.dataset.colorId);
+       else brand.colors = brand.colors.filter((color) => color.id !== row.dataset.colorId);
       renderPalette(card);
     });
   });
@@ -435,7 +559,10 @@
       const track = document.createElement('div'); track.className = 'neutral-track';
       neutral.forEach((datum) => {
         const marker = document.createElement('span'); marker.className = 'neutral-marker';
-        marker.style.left = `${(1 - datum.oklch.L) * 100}%`;
+        const neutralPosition = (1 - datum.oklch.L) * 100;
+        marker.style.left = `${neutralPosition}%`;
+        if (neutralPosition < 24) marker.classList.add('neutral-marker-start');
+        if (neutralPosition > 76) marker.classList.add('neutral-marker-end');
         marker.style.backgroundColor = datum.hex;
         marker.setAttribute('role', 'img');
         marker.setAttribute('aria-label', `${datum.brand.name}, ${datum.hex}, ${formatOklch(datum.oklch)}`);
