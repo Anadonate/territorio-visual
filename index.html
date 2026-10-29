@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f2ed">
+  <meta name="description" content="Una exploración visual para encontrar un territorio de marca propio.">
+  <title>Territorio Visual · Ana Donate</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="js/app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#contenido">Saltar al contenido</a>
+  <header class="site-header">
+    <a class="wordmark" href="#inicio" aria-label="Territorio Visual, inicio" data-home>
+      <svg class="brand-flower" viewBox="0 0 40 40" aria-hidden="true">
+        <path d="M20 4c3.8 5.4 4.5 9.4 0 16-4.5-6.6-3.8-10.6 0-16Z" fill="currentColor"/>
+        <path d="M36 20c-5.4 3.8-9.4 4.5-16 0 6.6-4.5 10.6-3.8 16 0Z" fill="currentColor"/>
+        <path d="M20 36c-3.8-5.4-4.5-9.4 0-16 4.5 6.6 3.8 10.6 0 16Z" fill="currentColor"/>
+        <path d="M4 20c5.4-3.8 9.4-4.5 16 0-6.6 4.5-10.6 3.8-16 0Z" fill="currentColor"/>
+        <circle cx="20" cy="20" r="3" fill="#d2a158"/>
+      </svg>
+      <span class="wordmark-copy"><span class="wordmark-kicker">ANA DONATE</span><span class="wordmark-name">Territorio Visual</span></span>
+    </a>
+    <div class="header-note"><span class="header-dot"></span> ESTUDIO DE IDENTIDAD · 3 MIN</div>
+  </header>
+
+  <main id="contenido">
+    <section class="welcome screen is-active" id="inicio" data-screen="0" aria-labelledby="welcome-title">
+      <div class="welcome-copy">
+        <p class="eyebrow"><span>01</span> EXPLORACIÓN DE MARCA</p>
+        <h1 id="welcome-title" tabindex="-1">Tu marca.<br><em>Tu territorio.</em></h1>
+        <p class="welcome-lede">Explora los códigos visuales de tu categoría y descubre caminos para construir una identidad con intención.</p>
+        <div class="welcome-actions">
+          <button class="button button-dark" type="button" data-start>Empezar exploración <span aria-hidden="true">↗</span></button>
+          <span class="micro-copy">Una mirada estratégica, en unos 3 minutos.</span>
+        </div>
+        <div class="welcome-rule"></div>
+        <p class="welcome-footnote"><span class="footnote-mark">✳</span> Una muestra pequeña inspira preguntas; no dicta verdades de mercado.</p>
+      </div>
+      <div class="wheel-stage" aria-label="Composición ilustrativa de una rueda cromática">
+        <div class="wheel-caption caption-top"><span>UNIVERSO</span><b>VISUAL</b></div>
+        <div class="wheel-orbit orbit-one"></div><div class="wheel-orbit orbit-two"></div>
+        <div class="color-wheel"><div class="wheel-core"><span class="core-flower">✳</span><span>COLOR<br>CON INTENCIÓN</span></div></div>
+        <span class="wheel-pin pin-one"></span><span class="wheel-pin pin-two"></span><span class="wheel-pin pin-three"></span>
+        <span class="wheel-label label-one">CÓDIGOS</span><span class="wheel-label label-two">CARÁCTER</span><span class="wheel-label label-three">DIRECCIÓN</span>
+        <div class="wheel-caption caption-bottom"><span>OBSERVAR</span><i>·</i><span>INTERPRETAR</span><i>·</i><span>PROPONER</span></div>
+      </div>
+      <div class="welcome-index"><span>ANA DONATE</span><span>ESTRATEGIA VISUAL</span><span>2026</span></div>
+    </section>
+
+    <div class="experience" data-experience hidden>
+      <aside class="journey-rail" aria-label="Progreso de la exploración">
+        <div class="journey-heading"><span class="eyebrow">TU RECORRIDO</span><span class="step-counter" data-counter>01 / 05</span></div>
+        <nav class="step-nav" aria-label="Pasos">
+          <button class="step-link is-current" type="button" data-go-step="1"><span class="step-index">01</span><span>Contexto</span><i></i></button>
+          <button class="step-link" type="button" data-go-step="2"><span class="step-index">02</span><span>Muestra</span><i></i></button>
+          <button class="step-link" type="button" data-go-step="3"><span class="step-index">03</span><span>Mapa cromático</span><i></i></button>
+          <button class="step-link" type="button" data-go-step="4"><span class="step-index">04</span><span>Territorios</span><i></i></button>
+          <button class="step-link" type="button" data-go-step="5"><span class="step-index">05</span><span>Informe</span><i></i></button>
+        </nav>
+        <div class="rail-note"><span>✳</span><p>Una herramienta orientativa para pensar tu identidad con más intención.</p></div>
+      </aside>
+
+      <div class="workspace">
+        <section class="screen work-screen is-active" data-screen="1" aria-labelledby="context-title" hidden>
+          <div class="screen-heading"><p class="eyebrow"><span>01</span> PUNTO DE PARTIDA</p><h2 id="context-title" tabindex="-1">Empecemos por <em>tu marca.</em></h2><p class="screen-intro">Un poco de contexto nos ayuda a mirar más allá del color y pensar en lo que quieres expresar.</p></div>
+          <div class="form-layout">
+            <div class="form-main">
+              <label class="field-label" for="brand-name">¿Cómo se llama tu proyecto?<span>01</span></label>
+              <input id="brand-name" name="brand-name" type="text" placeholder="Nombre de marca" autocomplete="organization">
+              <label class="field-label" for="brand-sector">¿En qué categoría participa?<span>02</span></label>
+              <input id="brand-sector" name="brand-sector" type="text" placeholder="Ej. cosmética, alimentación, bienestar…">
+              <label class="field-label" for="brand-description">Cuéntanos brevemente qué ofrece<span>03</span></label>
+              <textarea id="brand-description" name="brand-description" rows="3" placeholder="¿Qué haces y para quién?"></textarea>
+            </div>
+            <aside class="side-note"><span class="note-symbol">✳</span><p class="eyebrow">UNA BUENA PREGUNTA</p><p>¿Qué te gustaría que alguien sintiera al encontrarse con tu marca?</p><span class="note-small">No hace falta tenerlo todo resuelto.</span></aside>
+          </div>
+          <fieldset class="attribute-set"><legend>Elige hasta tres atributos que te gustaría transmitir <span class="optional-label">(vista de diseño)</span></legend><div class="attribute-list"><span class="attribute-chip">Cercana</span><span class="attribute-chip">Serena</span><span class="attribute-chip">Audaz</span><span class="attribute-chip">Natural</span><span class="attribute-chip">Precisa</span><span class="attribute-chip">Lúdica</span></div></fieldset>
+        </section>
+
+        <section class="screen work-screen" data-screen="2" aria-labelledby="sample-title" hidden>
+          <div class="screen-heading"><p class="eyebrow"><span>02</span> MIRAR ALREDEDOR</p><h2 id="sample-title" tabindex="-1">¿Qué códigos ves <em>en tu categoría?</em></h2><p class="screen-intro">Reúne unas pocas referencias visuales. La URL orienta la búsqueda; los colores se revisan manualmente.</p></div>
+          <div class="sample-note"><span class="sample-note-icon">i</span><p><strong>Una muestra, no todo el mercado.</strong> Trabajaremos con hasta tres marcas que tú elijas. No leeremos automáticamente sus webs.</p></div>
+          <div class="competitor-grid">
+            <article class="competitor-card"><span class="card-number">01</span><div class="competitor-placeholder"><span>+</span></div><p class="eyebrow">REFERENCIA 01</p><h3>Una marca de tu categoría</h3><div class="placeholder-lines"><i></i><i></i></div><div class="swatch-placeholder"><b></b><b></b><b></b><span>COLORES A CONFIRMAR</span></div></article>
+            <article class="competitor-card"><span class="card-number">02</span><div class="competitor-placeholder"><span>+</span></div><p class="eyebrow">REFERENCIA 02</p><h3>Otra forma de expresarse</h3><div class="placeholder-lines"><i></i><i></i></div><div class="swatch-placeholder"><b></b><b></b><b></b><span>COLORES A CONFIRMAR</span></div></article>
+            <article class="competitor-card"><span class="card-number">03</span><div class="competitor-placeholder"><span>+</span></div><p class="eyebrow">REFERENCIA 03 · OPCIONAL</p><h3>Una referencia más</h3><div class="placeholder-lines"><i></i><i></i></div><div class="swatch-placeholder"><b></b><b></b><b></b><span>COLORES A CONFIRMAR</span></div></article>
+          </div>
+          <p class="quiet-caption"><span class="tiny-star">✳</span> Puedes continuar con menos referencias. La lectura será más acotada.</p>
+        </section>
+
+        <section class="screen work-screen map-screen" data-screen="3" aria-labelledby="map-title" hidden>
+          <div class="screen-heading"><p class="eyebrow"><span>03</span> PATRONES DE COLOR</p><h2 id="map-title" tabindex="-1">Una categoría.<br><em>Muchos matices.</em></h2><p class="screen-intro">El mapa mostrará dónde aparecen los colores de la muestra. Aquí ves la estructura visual; el análisis se conectará en una fase posterior.</p></div>
+          <div class="map-composition">
+            <div class="map-wheel-wrap"><div class="map-wheel" role="img" aria-label="Rueda cromática de referencia, sin datos de competidores"><span class="map-wheel-center">ÁREA<br>DE EXPLORACIÓN</span><span class="map-dot dot-a"></span><span class="map-dot dot-b"></span><span class="map-dot dot-c"></span></div><span class="map-axis axis-top">CÁLIDO</span><span class="map-axis axis-bottom">FRÍO</span><span class="map-axis axis-left">SUAVE</span><span class="map-axis axis-right">VIVO</span></div>
+            <div class="map-aside"><span class="map-label">VISTA PREVIA · SIN DATOS</span><h3>El color también<br>ocupa un territorio.</h3><p>Al añadir referencias, podremos observar qué tonos se repiten y cuáles aparecen menos en esta muestra.</p><div class="map-legend"><span><i class="legend-ring"></i> Cada punto representará un color aportado</span><span><i class="legend-line"></i> Las etiquetas identificarán la marca</span></div><p class="map-caveat">Una zona poco representada no demuestra por sí sola que exista una oportunidad.</p></div>
+          </div>
+        </section>
+
+        <section class="screen work-screen" data-screen="4" aria-labelledby="territory-title" hidden>
+          <div class="screen-heading"><p class="eyebrow"><span>04</span> DIRECCIONES POSIBLES</p><h2 id="territory-title" tabindex="-1">Tres maneras de <em>tomar posición.</em></h2><p class="screen-intro">No son respuestas automáticas. Son lentes distintas para pensar una identidad coherente y propia.</p></div>
+          <div class="territory-grid">
+            <article class="territory-card familiar"><div class="territory-top"><span class="territory-no">A</span><span class="territory-tag">PUNTO DE APOYO</span></div><div class="territory-swatches"><i></i><i></i><i></i><i></i></div><h3>Familiar</h3><p>Reconoce los códigos habituales de la categoría y busca construir desde ellos.</p><div class="territory-divider"></div><p class="territory-foot">PREGUNTA CLAVE <span>¿Qué merece conservarse?</span></p></article>
+            <article class="territory-card distinct"><div class="territory-top"><span class="territory-no">B</span><span class="territory-tag">CONTRASTE CON SENTIDO</span></div><div class="territory-swatches"><i></i><i></i><i></i><i></i></div><h3>Diferenciado</h3><p>Explora una distancia visual que siga teniendo sentido para tu público.</p><div class="territory-divider"></div><p class="territory-foot">PREGUNTA CLAVE <span>¿Dónde está el contraste?</span></p></article>
+            <article class="territory-card expressive"><div class="territory-top"><span class="territory-no">C</span><span class="territory-tag">EXPRESIÓN PROPIA</span></div><div class="territory-swatches"><i></i><i></i><i></i><i></i></div><h3>Expresivo</h3><p>Abre una dirección más singular y pone a prueba sus riesgos y matices.</p><div class="territory-divider"></div><p class="territory-foot">PREGUNTA CLAVE <span>¿Qué vale la pena arriesgar?</span></p></article>
+          </div>
+          <p class="territory-disclaimer">Las paletas y recomendaciones se construirán a partir del contexto de marca y la muestra que aportes.</p>
+        </section>
+
+        <section class="screen work-screen report-screen" data-screen="5" aria-labelledby="report-title" hidden>
+          <div class="screen-heading"><p class="eyebrow"><span>05</span> SÍNTESIS ESTRATÉGICA</p><h2 id="report-title" tabindex="-1">Una lectura para <em>seguir pensando.</em></h2><p class="screen-intro">El informe separará lo observado de las hipótesis y recomendaciones que merecen validarse.</p></div>
+          <article class="report-preview"><div class="report-cover"><div class="report-brand"><span class="cover-star">✳</span> ANA DONATE</div><span class="cover-kicker">EXPLORACIÓN DE IDENTIDAD VISUAL</span><h3>Un territorio<br>para <em>descubrir.</em></h3><div class="cover-wheel"><span></span></div><span class="cover-number">01 — 05</span></div><div class="report-content"><div class="report-topline"><span>LECTURA DE MUESTRA</span><span class="report-badge">VISTA PREVIA</span></div><div class="report-section"><span class="report-index">01</span><div><h4>Lo que observamos</h4><p>Patrones visuales presentes en las referencias aportadas.</p></div></div><div class="report-section"><span class="report-index">02</span><div><h4>Lo que podríamos explorar</h4><p>Hipótesis creativas conectadas con el contexto de marca.</p></div></div><div class="report-section"><span class="report-index">03</span><div><h4>Lo que conviene validar</h4><p>Preguntas para contrastar antes de decidir una identidad.</p></div></div><div class="report-endnote">Una muestra pequeña no representa todo el mercado.</div></div></article>
+          <div class="report-cta"><span>¿Lista para convertir una dirección en identidad?</span><span class="cta-note">La exploración completa llegará en la siguiente fase.</span></div>
+        </section>
+
+        <div class="experience-footer">
+          <button class="text-button" type="button" data-back><span aria-hidden="true">←</span> Anterior</button>
+          <div class="progress-track" role="progressbar" aria-label="Progreso de la exploración" aria-valuemin="1" aria-valuemax="5" aria-valuenow="1"><span data-progress></span></div>
+          <button class="button button-dark next-button" type="button" data-next>Siguiente <span aria-hidden="true">→</span></button>
+        </div>
+        <p class="privacy-note"><span>✳</span> La navegación es una maqueta. Tus respuestas no se guardan ni se envían.</p>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer"><span>ANA DONATE · ESTRATEGIA & IDENTIDAD VISUAL</span><span>TERRITORIO VISUAL <i>✳</i></span></footer>
+</body>
+</html>
+
