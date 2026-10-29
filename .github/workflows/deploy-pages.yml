@@ -1,0 +1,43 @@
+name: Deploy Territorio Visual to GitHub Pages
+
+on:
+  push:
+    branches:
+      - fase-2-redisenada
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download redesigned project archive
+        run: |
+          mkdir site
+          curl -fL "https://d2ol7oe51mr4n9.cloudfront.net/user_3JJYG4w5ULnCqNhjgVMDVSh24c3/7a33fb51-1894-40a5-b210-cbdc62a65907.zip" -o /tmp/territorio-visual.zip
+          unzip -q /tmp/territorio-visual.zip -d site
+          test -f site/index.html
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
