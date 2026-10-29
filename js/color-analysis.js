@@ -106,28 +106,38 @@
   }
 
   function detectBackground(data, width, height) {
-    const points = [[0, 0], [width - 1, 0], [0, height - 1], [width - 1, height - 1]];
-    const cornerColors = points.map(([x, y]) => {
-      const index = (y * width + x) * 4;
-      return { r: data[index], g: data[index + 1], b: data[index + 2], alpha: data[index + 3] };
-    });
-    if (cornerColors.some((color) => color.alpha < 235)) return null;
-    const labs = cornerColors.map((color) => rgbToOklab(color.r, color.g, color.b));
-    if (labs.some((lab) => labs.some((other) => distance(lab, other) > 0.035))) return null;
-    return {
-      r: cornerColors.reduce((sum, color) => sum + color.r, 0) / cornerColors.length,
-      g: cornerColors.reduce((sum, color) => sum + color.g, 0) / cornerColors.length,
-      b: cornerColors.reduce((sum, color) => sum + color.b, 0) / cornerColors.length,
-      lab: rgbToOklab(
-        cornerColors.reduce((sum, color) => sum + color.r, 0) / cornerColors.length,
-        cornerColors.reduce((sum, color) => sum + color.g, 0) / cornerColors.length,
-        cornerColors.reduce((sum, color) => sum + color.b, 0) / cornerColors.length,
-      ),
-    };
+    const edge = Math.max(1, Math.ceil(Math.min(width, height) * 0.06));
+    const histogram = new Map();
+    let visibleEdge = 0;
+    let transparent = 0;
+    let semitransparent = 0;
+    for (let y = 0; y < height; y += 1) for (let x = 0; x < width; x += 1) {
+      const i = (y * width + x) * 4;
+      const alpha = data[i + 3];
+      if (alpha === 0) { transparent += 1; continue; }
+      if (alpha < 250) semitransparent += 1;
+      if (x >= edge && x < width - edge && y >= edge && y < height - edge) continue;
+      visibleEdge += 1;
+      const r = data[i]; const g = data[i + 1]; const b = data[i + 2];
+      const key = `${r >> 3}-${g >> 3}-${b >> 3}`;
+      const bin = histogram.get(key) || { count: 0, r: 0, g: 0, b: 0 };
+      const weight = alpha / 255;
+      bin.count += weight; bin.r += r * weight; bin.g += g * weight; bin.b += b * weight;
+      histogram.set(key, bin);
+    }
+    const dominant = [...histogram.values()].sort((a, b) => b.count - a.count)[0];
+    const share = dominant && visibleEdge ? dominant.count / visibleEdge : 0;
+    const rgba = dominant && dominant.count ? {
+      r: dominant.r / dominant.count, g: dominant.g / dominant.count, b: dominant.b / dominant.count,
+    } : null;
+    const transparentRatio = transparent / (width * height);
+    const background = rgba && transparentRatio <= 0.03 ? { ...rgba, lab: rgbToOklab(rgba.r, rgba.g, rgba.b), share } : null;
+    const confidence = !background ? 'ninguna' : share >= 0.68 ? 'alta' : share >= 0.38 ? 'media' : 'baja';
+    return { background, confidence, share, transparentRatio, semitransparentRatio: semitransparent / (width * height) };
   }
 
-  function extractColors(image, includeBackground = false) {
-    const scale = Math.min(1, 144 / Math.max(image.naturalWidth, image.naturalHeight));
+  function extractColors(image, backgroundMode = 'auto') {
+    const scale = Math.min(1, 320 / Math.max(image.naturalWidth, image.naturalHeight));
     const width = Math.max(1, Math.round(image.naturalWidth * scale));
     const height = Math.max(1, Math.round(image.naturalHeight * scale));
     const canvas = document.createElement('canvas');
@@ -137,20 +147,58 @@
     context.clearRect(0, 0, width, height);
     context.drawImage(image, 0, 0, width, height);
     const pixels = context.getImageData(0, 0, width, height).data;
-    const background = detectBackground(pixels, width, height);
+    const detection = detectBackground(pixels, width, height);
+    const background = detection.background;
+    const mode = typeof backgroundMode === 'boolean' ? (backgroundMode ? 'include' : 'auto') : backgroundMode;
+    const excludeBackground = Boolean(background && (mode === 'exclude' || (mode === 'auto' && detection.confidence === 'alta')));
+    const backgroundMask = new Uint8Array(width * height);
+    if (background && excludeBackground) {
+      const queue = new Int32Array(width * height);
+      let head = 0; let tail = 0;
+      const add = (x, y) => {
+        if (x < 0 || y < 0 || x >= width || y >= height) return;
+        const pixel = y * width + x;
+        if (backgroundMask[pixel]) return;
+        const offset = pixel * 4;
+        if (pixels[offset + 3] < 230) return;
+        const lab = rgbToOklab(pixels[offset], pixels[offset + 1], pixels[offset + 2]);
+        if (distance(lab, background.lab) > 0.075) return;
+        backgroundMask[pixel] = 1; queue[tail++] = pixel;
+      };
+      for (let x = 0; x < width; x += 1) { add(x, 0); add(x, height - 1); }
+      for (let y = 1; y < height - 1; y += 1) { add(0, y); add(width - 1, y); }
+      while (head < tail) {
+        const pixel = queue[head++]; const x = pixel % width; const y = Math.floor(pixel / width);
+        add(x - 1, y); add(x + 1, y); add(x, y - 1); add(x, y + 1);
+      }
+    }
     const histogram = new Map();
     let foregroundPixels = 0;
+    let semitransparentPixels = 0;
 
     for (let index = 0; index < pixels.length; index += 4) {
       const alpha = pixels[index + 3];
-      if (alpha < 220) continue;
+      if (alpha < 12) continue;
       const r = pixels[index]; const g = pixels[index + 1]; const b = pixels[index + 2];
       const lab = rgbToOklab(r, g, b);
-      if (background && !includeBackground && distance(lab, background.lab) < 0.045) continue;
-      foregroundPixels += 1;
+      if (excludeBackground && (backgroundMask[index / 4] || distance(lab, background.lab) < 0.055)) continue;
+      const weight = alpha / 255;
+      foregroundPixels += weight;
+      if (alpha < 250) semitransparentPixels += 1;
       const key = `${r >> 4}-${g >> 4}-${b >> 4}`;
-      const bin = histogram.get(key) || { count: 0, r: 0, g: 0, b: 0 };
-      bin.count += 1; bin.r += r; bin.g += g; bin.b += b;
+      const x = (index / 4) % width; const y = Math.floor(index / 4 / width);
+      let similarNeighbours = 0;
+      for (let dy = -2; dy <= 2; dy += 1) for (let dx = -2; dx <= 2; dx += 1) {
+        if ((!dx && !dy) || x + dx < 0 || y + dy < 0 || x + dx >= width || y + dy >= height) continue;
+        const neighbour = (y + dy) * width + x + dx;
+        const offset = neighbour * 4;
+        if (pixels[offset + 3] < 230 || (excludeBackground && (backgroundMask[neighbour] || distance(rgbToOklab(pixels[offset], pixels[offset + 1], pixels[offset + 2]), background.lab) < 0.055))) continue;
+        if (distance(lab, rgbToOklab(pixels[offset], pixels[offset + 1], pixels[offset + 2])) < 0.018) similarNeighbours += 1;
+      }
+      const isSolidCore = alpha >= 230 && similarNeighbours >= 12;
+      const bin = histogram.get(key) || { count: 0, r: 0, g: 0, b: 0, coreCount: 0, coreR: 0, coreG: 0, coreB: 0 };
+      bin.count += weight; bin.r += r * weight; bin.g += g * weight; bin.b += b * weight;
+      if (isSolidCore) { bin.coreCount += weight; bin.coreR += r * weight; bin.coreG += g * weight; bin.coreB += b * weight; }
       histogram.set(key, bin);
     }
 
@@ -158,7 +206,8 @@
 
     const bins = [...histogram.values()].map((bin) => {
       const rgb = { r: bin.r / bin.count, g: bin.g / bin.count, b: bin.b / bin.count };
-      return { ...rgb, lab: rgbToOklab(rgb.r, rgb.g, rgb.b), count: bin.count };
+      const core = bin.coreCount ? { r: bin.coreR / bin.coreCount, g: bin.coreG / bin.coreCount, b: bin.coreB / bin.coreCount } : null;
+      return { ...rgb, lab: rgbToOklab(rgb.r, rgb.g, rgb.b), count: bin.count, coreCount: bin.coreCount, core };
     }).sort((a, b) => b.count - a.count);
     const clusters = [];
     for (const bin of bins) {
@@ -168,19 +217,24 @@
         const gap = distance(bin.lab, cluster.lab);
         if (gap < nearestDistance) { nearest = cluster; nearestDistance = gap; }
       }
-      if (nearest && nearestDistance < 0.055) {
+      const nearBlackNeutralPair = nearest
+        && Math.hypot(bin.lab.a, bin.lab.b) < 0.025 && Math.hypot(nearest.lab.a, nearest.lab.b) < 0.025
+        && bin.lab.L < 0.30 && nearest.lab.L < 0.30;
+      if (nearest && nearestDistance < (nearBlackNeutralPair ? 0.11 : 0.055)) {
         nearest.count += bin.count;
         nearest.r += bin.r * bin.count;
         nearest.g += bin.g * bin.count;
         nearest.b += bin.b * bin.count;
+        nearest.coreCount += bin.coreCount;
+        if (bin.core) { nearest.coreR += bin.core.r * bin.coreCount; nearest.coreG += bin.core.g * bin.coreCount; nearest.coreB += bin.core.b * bin.coreCount; }
         nearest.lab = rgbToOklab(nearest.r / nearest.count, nearest.g / nearest.count, nearest.b / nearest.count);
       } else {
-        clusters.push({ ...bin, r: bin.r * bin.count, g: bin.g * bin.count, b: bin.b * bin.count });
+        clusters.push({ ...bin, r: bin.r * bin.count, g: bin.g * bin.count, b: bin.b * bin.count, coreR: bin.core ? bin.core.r * bin.coreCount : 0, coreG: bin.core ? bin.core.g * bin.coreCount : 0, coreB: bin.core ? bin.core.b * bin.coreCount : 0 });
       }
     }
 
     let usableClusters = clusters;
-    if (background && !includeBackground && clusters.length > 1) {
+    if (background && excludeBackground && clusters.length > 1) {
       const dominant = [...clusters].sort((a, b) => b.count - a.count)[0];
       const axis = { r: dominant.r / dominant.count - background.r, g: dominant.g / dominant.count - background.g, b: dominant.b / dominant.count - background.b };
       const axisLengthSquared = axis.r ** 2 + axis.g ** 2 + axis.b ** 2;
@@ -197,17 +251,35 @@
       }
     }
 
-    const selected = usableClusters
+    const solidCores = usableClusters.filter((cluster) => cluster.coreCount / foregroundPixels >= 0.0025 && cluster.coreCount / cluster.count >= 0.18);
+    const monochromeBlend = background && usableClusters.length > 1 && usableClusters.every((cluster) => Math.hypot(cluster.lab.a, cluster.lab.b) < 0.025);
+    const strongestNeutral = monochromeBlend
+      ? [usableClusters.reduce((mark, cluster) => distance(cluster.lab, background.lab) > distance(mark.lab, background.lab) ? cluster : mark)]
+      : null;
+    const preferredClusters = solidCores.length ? solidCores : (strongestNeutral || usableClusters);
+    const selected = preferredClusters
       .filter((cluster) => cluster.count / foregroundPixels >= 0.02)
       .sort((a, b) => b.count - a.count)
-      .slice(0, 4)
       .map((cluster) => {
-        const hex = rgbToHex(cluster.r / cluster.count, cluster.g / cluster.count, cluster.b / cluster.count);
+        const useCore = cluster.coreCount / cluster.count >= 0.08;
+        const color = useCore
+          ? [cluster.coreR / cluster.coreCount, cluster.coreG / cluster.coreCount, cluster.coreB / cluster.coreCount]
+          : [cluster.r / cluster.count, cluster.g / cluster.count, cluster.b / cluster.count];
+        const hex = rgbToHex(...color);
         return { hex, share: cluster.count / foregroundPixels, oklch: toOklch(hex) };
       });
     const uniqueColors = [...new Map(selected.map((color) => [color.hex, color])).values()];
     if (!uniqueColors.length) throw new Error('No se detectaron tonos con suficiente presencia. Añade los colores manualmente.');
-    return { colors: uniqueColors, background: background ? rgbToHex(background.r, background.g, background.b) : null, foregroundPixels };
+    return {
+      colors: uniqueColors,
+      background: background ? rgbToHex(background.r, background.g, background.b) : null,
+      backgroundConfidence: background ? detection.confidence : 'ninguna',
+      backgroundShare: detection.share,
+      backgroundTransparent: detection.transparentRatio > 0.01,
+      transparentRatio: detection.transparentRatio,
+      semitransparentRatio: detection.semitransparentRatio,
+      semitransparentPixels,
+    };
   }
 
   window.TerritorioColor = Object.freeze({ loadLogo, extractColors, toOklch, deltaEOK, rgbToHex });
