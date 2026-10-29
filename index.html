@@ -8,6 +8,7 @@
   <title>Territorio Visual · Ana Donate</title>
   <link rel="icon" href="assets/favicon-auditoria.svg" type="image/svg+xml">
   <link rel="stylesheet" href="styles.css">
+  <script src="js/color-analysis.js" defer></script>
   <script src="js/app.js" defer></script>
 </head>
 <body>
@@ -75,67 +76,69 @@
         </section>
 
         <section class="screen work-screen" data-screen="2" aria-labelledby="sample-title" hidden>
-          <div class="screen-heading"><p class="eyebrow"><span>02</span> MIRAR ALREDEDOR</p><h2 id="sample-title" tabindex="-1">¿Qué códigos ves <em>en tu categoría?</em></h2><p class="screen-intro">Reúne unas pocas referencias visuales. La URL orienta la búsqueda; los colores se revisan manualmente.</p></div>
-          <div class="sample-note"><span class="sample-note-icon">i</span><p><strong>Una muestra, no todo el mercado.</strong> Trabajaremos con hasta tres marcas que tú elijas. No leeremos automáticamente sus webs.</p></div>
-          <div class="competitor-grid">
-            <article class="competitor-card">
+          <div class="screen-heading"><p class="eyebrow"><span>02</span> MIRAR ALREDEDOR</p><h2 id="sample-title" tabindex="-1">El punto de partida <em>es el logotipo.</em></h2><p class="screen-intro">Sube hasta tres logotipos. Extraeremos una selección inicial de tonos en este navegador para que puedas revisarla.</p></div>
+          <div class="sample-note"><span class="sample-note-icon">i</span><p><strong>Un logotipo no es una guía de marca.</strong> Los colores extraídos son estimaciones de esta imagen, no colores corporativos oficiales. No leeremos las webs ni enviaremos tus archivos.</p></div>
+          <div class="competitor-grid logo-grid">
+            <article class="competitor-card logo-card" data-brand-card data-brand-id="1">
               <span class="card-number">01</span>
-              <div class="competitor-placeholder" aria-hidden="true"><strong>01</strong><span>MARCA / REFERENCIA VISUAL</span></div>
-              <p class="eyebrow">REFERENCIA 01</p>
-              <label class="reference-field" for="reference-name-1">Nombre de la marca
-                <input id="reference-name-1" name="reference-name-1" type="text" placeholder="Ej. Marca de cosmética" autocomplete="off">
-              </label>
-              <form class="reference-form" data-reference-form novalidate>
-                <label class="reference-field" for="reference-url-1">Enlace de su web
-                  <span class="reference-control"><input id="reference-url-1" name="reference-url-1" type="url" inputmode="url" placeholder="https://marca.com" autocomplete="url" aria-describedby="reference-status-1"><button type="submit">Añadir enlace</button></span>
-                </label>
-                <p class="reference-status" id="reference-status-1" data-reference-status role="status" aria-live="polite">Opcional · la web no se analizará automáticamente.</p>
-                <a class="reference-link" data-reference-link href="#" target="_blank" rel="noopener noreferrer" hidden>Abrir referencia ↗</a>
-              </form>
-              <div class="swatch-placeholder" aria-label="Colores pendientes de revisión"><b></b><b></b><b></b><span>COLORES A CONFIRMAR</span></div>
+              <label class="logo-dropzone" for="logo-file-1"><span class="logo-preview" data-logo-preview aria-hidden="true">01</span><span class="upload-copy"><strong>Subir logotipo</strong><small>PNG · JPEG · SVG seguro</small></span><span class="upload-mark" aria-hidden="true">+</span></label>
+              <input class="logo-file-input" id="logo-file-1" type="file" accept="image/png,image/jpeg,image/svg+xml,.png,.jpg,.jpeg,.svg" data-logo-file>
+              <label class="reference-field" for="reference-name-1">Nombre de la marca<input id="reference-name-1" data-brand-name type="text" placeholder="Ej. Marca de cosmética" autocomplete="off"></label>
+              <label class="reference-field" for="reference-url-1">Web de referencia · opcional<span class="reference-control"><input id="reference-url-1" type="url" inputmode="url" placeholder="https://marca.com" autocomplete="url"><button type="button" data-add-url>Añadir</button></span></label>
+              <a class="reference-link" data-reference-link href="#" target="_blank" rel="noopener noreferrer" hidden>Abrir referencia ↗</a>
+              <p class="reference-status" data-brand-status role="status" aria-live="polite">La web solo sirve como referencia; no usaremos sus colores para identificar la marca.</p>
+              <label class="background-choice" data-background-control hidden><input type="checkbox" data-include-background> Incluir fondo detectado <span data-background-hex></span></label>
+              <div class="palette-list" data-palette-list aria-live="polite"><p class="palette-empty">La paleta aparecerá aquí para que la revises.</p></div>
+              <div class="card-actions"><button class="text-action" type="button" data-add-color>Añadir color manual</button><button class="button button-dark palette-confirm" type="button" data-confirm-brand disabled>Confirmar paleta</button></div>
+              <p class="palette-confirmation" data-confirmation hidden>Paleta confirmada para esta muestra.</p>
             </article>
-            <article class="competitor-card">
+            <article class="competitor-card logo-card" data-brand-card data-brand-id="2">
               <span class="card-number">02</span>
-              <div class="competitor-placeholder" aria-hidden="true"><strong>02</strong><span>MARCA / REFERENCIA VISUAL</span></div>
-              <p class="eyebrow">REFERENCIA 02</p>
-              <label class="reference-field" for="reference-name-2">Nombre de la marca
-                <input id="reference-name-2" name="reference-name-2" type="text" placeholder="Ej. Marca de cuidado facial" autocomplete="off">
-              </label>
-              <form class="reference-form" data-reference-form novalidate>
-                <label class="reference-field" for="reference-url-2">Enlace de su web
-                  <span class="reference-control"><input id="reference-url-2" name="reference-url-2" type="url" inputmode="url" placeholder="https://marca.com" autocomplete="url" aria-describedby="reference-status-2"><button type="submit">Añadir enlace</button></span>
-                </label>
-                <p class="reference-status" id="reference-status-2" data-reference-status role="status" aria-live="polite">Opcional · la web no se analizará automáticamente.</p>
-                <a class="reference-link" data-reference-link href="#" target="_blank" rel="noopener noreferrer" hidden>Abrir referencia ↗</a>
-              </form>
-              <div class="swatch-placeholder" aria-label="Colores pendientes de revisión"><b></b><b></b><b></b><span>COLORES A CONFIRMAR</span></div>
+              <label class="logo-dropzone" for="logo-file-2"><span class="logo-preview" data-logo-preview aria-hidden="true">02</span><span class="upload-copy"><strong>Subir logotipo</strong><small>PNG · JPEG · SVG seguro</small></span><span class="upload-mark" aria-hidden="true">+</span></label>
+              <input class="logo-file-input" id="logo-file-2" type="file" accept="image/png,image/jpeg,image/svg+xml,.png,.jpg,.jpeg,.svg" data-logo-file>
+              <label class="reference-field" for="reference-name-2">Nombre de la marca<input id="reference-name-2" data-brand-name type="text" placeholder="Ej. Marca de cuidado facial" autocomplete="off"></label>
+              <label class="reference-field" for="reference-url-2">Web de referencia · opcional<span class="reference-control"><input id="reference-url-2" type="url" inputmode="url" placeholder="https://marca.com" autocomplete="url"><button type="button" data-add-url>Añadir</button></span></label>
+              <a class="reference-link" data-reference-link href="#" target="_blank" rel="noopener noreferrer" hidden>Abrir referencia ↗</a>
+              <p class="reference-status" data-brand-status role="status" aria-live="polite">La web solo sirve como referencia; no usaremos sus colores para identificar la marca.</p>
+              <label class="background-choice" data-background-control hidden><input type="checkbox" data-include-background> Incluir fondo detectado <span data-background-hex></span></label>
+              <div class="palette-list" data-palette-list aria-live="polite"><p class="palette-empty">La paleta aparecerá aquí para que la revises.</p></div>
+              <div class="card-actions"><button class="text-action" type="button" data-add-color>Añadir color manual</button><button class="button button-dark palette-confirm" type="button" data-confirm-brand disabled>Confirmar paleta</button></div>
+              <p class="palette-confirmation" data-confirmation hidden>Paleta confirmada para esta muestra.</p>
             </article>
-            <article class="competitor-card">
+            <article class="competitor-card logo-card" data-brand-card data-brand-id="3">
               <span class="card-number">03</span>
-              <div class="competitor-placeholder" aria-hidden="true"><strong>03</strong><span>MARCA / REFERENCIA VISUAL</span></div>
-              <p class="eyebrow">REFERENCIA 03 · OPCIONAL</p>
-              <label class="reference-field" for="reference-name-3">Nombre de la marca
-                <input id="reference-name-3" name="reference-name-3" type="text" placeholder="Ej. Otra referencia" autocomplete="off">
-              </label>
-              <form class="reference-form" data-reference-form novalidate>
-                <label class="reference-field" for="reference-url-3">Enlace de su web
-                  <span class="reference-control"><input id="reference-url-3" name="reference-url-3" type="url" inputmode="url" placeholder="https://marca.com" autocomplete="url" aria-describedby="reference-status-3"><button type="submit">Añadir enlace</button></span>
-                </label>
-                <p class="reference-status" id="reference-status-3" data-reference-status role="status" aria-live="polite">Opcional · la web no se analizará automáticamente.</p>
-                <a class="reference-link" data-reference-link href="#" target="_blank" rel="noopener noreferrer" hidden>Abrir referencia ↗</a>
-              </form>
-              <div class="swatch-placeholder" aria-label="Colores pendientes de revisión"><b></b><b></b><b></b><span>COLORES A CONFIRMAR</span></div>
+              <label class="logo-dropzone" for="logo-file-3"><span class="logo-preview" data-logo-preview aria-hidden="true">03</span><span class="upload-copy"><strong>Subir logotipo</strong><small>PNG · JPEG · SVG seguro</small></span><span class="upload-mark" aria-hidden="true">+</span></label>
+              <input class="logo-file-input" id="logo-file-3" type="file" accept="image/png,image/jpeg,image/svg+xml,.png,.jpg,.jpeg,.svg" data-logo-file>
+              <label class="reference-field" for="reference-name-3">Nombre de la marca<input id="reference-name-3" data-brand-name type="text" placeholder="Ej. Otra referencia" autocomplete="off"></label>
+              <label class="reference-field" for="reference-url-3">Web de referencia · opcional<span class="reference-control"><input id="reference-url-3" type="url" inputmode="url" placeholder="https://marca.com" autocomplete="url"><button type="button" data-add-url>Añadir</button></span></label>
+              <a class="reference-link" data-reference-link href="#" target="_blank" rel="noopener noreferrer" hidden>Abrir referencia ↗</a>
+              <p class="reference-status" data-brand-status role="status" aria-live="polite">La web solo sirve como referencia; no usaremos sus colores para identificar la marca.</p>
+              <label class="background-choice" data-background-control hidden><input type="checkbox" data-include-background> Incluir fondo detectado <span data-background-hex></span></label>
+              <div class="palette-list" data-palette-list aria-live="polite"><p class="palette-empty">La paleta aparecerá aquí para que la revises.</p></div>
+              <div class="card-actions"><button class="text-action" type="button" data-add-color>Añadir color manual</button><button class="button button-dark palette-confirm" type="button" data-confirm-brand disabled>Confirmar paleta</button></div>
+              <p class="palette-confirmation" data-confirmation hidden>Paleta confirmada para esta muestra.</p>
             </article>
           </div>
-          <p class="quiet-caption"><span class="tiny-star">✳</span> Puedes continuar con menos referencias. La lectura será más acotada.</p>
+          <div class="method-accordion"><details><summary>¿Cómo se obtienen y clasifican los colores?</summary><div><p>El archivo se procesa localmente en tu navegador y se rasteriza con un lado máximo de 144 px. Se excluyen píxeles con alfa inferior a 220/255, se cuantizan los canales RGB a 4 bits y se agrupan por distancia euclídea OKLab inferior a 0,055. Se muestran hasta seis grupos que superan el 0,8 % de los píxeles considerados. Estas decisiones reducen ruido y antialiasing, pero pueden omitir acentos pequeños: revísalos y añádelos manualmente.</p><p>Si las cuatro esquinas opacas son similares (distancia OKLab inferior a 0,035), se propone ese tono como fondo y se excluyen por defecto los píxeles a menos de 0,045. Puedes incluirlo si forma parte del logotipo. En JPEG también se omiten grupos pequeños alineados con la mezcla RGB entre el fondo y el color más frecuente para reducir halos de compresión; los degradados reales pueden requerir corrección manual. Los resultados son estimaciones de la imagen aportada, no una certificación de identidad.</p><p>Para ampliar la lectura, introduce colores y documenta su fuente (manual de identidad, packaging u otro activo oficial). La referencia queda declarada por ti, no verificada automáticamente. Los colores de campaña se conservan aparte y no entran en la comparación estable.</p><p>Para comparar marcas calculamos ΔE<sub>OK</sub>, la distancia euclídea entre coordenadas OKLab de sus colores HEX. Un valor ≤ 0,055 se etiqueta como proximidad cromática operativa; no demuestra equivalencia de identidad ni relevancia estratégica.</p></div></details></div>
+          <p class="quiet-caption"><span class="tiny-star">✳</span> La comparación se habilita con paletas revisadas y confirmadas. Es una muestra limitada, no un estudio de mercado.</p>
         </section>
 
         <section class="screen work-screen map-screen" data-screen="3" aria-labelledby="map-title" hidden>
-          <div class="screen-heading"><p class="eyebrow"><span>03</span> PATRONES DE COLOR</p><h2 id="map-title" tabindex="-1">Una categoría.<br><em>Muchos matices.</em></h2><p class="screen-intro">El mapa mostrará dónde aparecen los colores de la muestra. Aquí ves la estructura visual; el análisis se conectará en una fase posterior.</p></div>
+          <div class="screen-heading"><p class="eyebrow"><span>03</span> PATRONES DE COLOR</p><h2 id="map-title" tabindex="-1">Una categoría.<br><em>Muchos matices.</em></h2><p class="screen-intro">Una lectura de los colores confirmados en los logotipos aportados, no de las webs ni de la categoría completa.</p></div>
+          <div class="map-summary" data-map-summary role="status" aria-live="polite">Confirma al menos una paleta para construir esta vista.</div>
           <div class="map-composition">
-            <div class="map-wheel-wrap"><div class="map-wheel" role="img" aria-label="Rueda cromática de referencia, sin datos de competidores"><span class="map-wheel-center">ÁREA<br>DE EXPLORACIÓN</span><span class="map-dot dot-a"></span><span class="map-dot dot-b"></span><span class="map-dot dot-c"></span></div><span class="map-axis axis-top">CÁLIDO</span><span class="map-axis axis-bottom">FRÍO</span><span class="map-axis axis-left">SUAVE</span><span class="map-axis axis-right">VIVO</span></div>
-            <div class="map-aside"><span class="map-label">VISTA PREVIA · SIN DATOS</span><h3>El color también<br>ocupa un territorio.</h3><p>Al añadir referencias, podremos observar qué tonos se repiten y cuáles aparecen menos en esta muestra.</p><div class="map-legend"><span><i class="legend-ring"></i> Cada punto representará un color aportado</span><span><i class="legend-line"></i> Las etiquetas identificarán la marca</span></div><p class="map-caveat">Una zona poco representada no demuestra por sí sola que exista una oportunidad.</p></div>
+            <div class="map-visual-column">
+              <div class="map-wheel-wrap">
+                <div class="map-wheel" role="group" aria-label="Mapa cromático: matiz en el ángulo y croma en la distancia al centro"><div class="map-grid-rings" aria-hidden="true"><i></i><i></i><i></i><i></i></div><svg class="map-data" data-map-data viewBox="0 0 400 400" role="group" aria-label="Colores de marcas confirmadas"></svg><span class="map-wheel-center">BAJO<br>CROMA</span><span class="map-empty" data-map-empty hidden></span></div>
+                <span class="map-axis axis-top">0° · ROJO</span><span class="map-axis axis-right">90° · AMARILLO</span><span class="map-axis axis-bottom">180° · AZUL VERDOSO</span><span class="map-axis axis-left">270° · VIOLETA</span>
+              </div>
+              <p class="map-axis-note">Ángulo = matiz · distancia al centro = croma (anillos 0,09 · 0,18 · 0,27 · 0,36) · cada punto conserva su color real.</p>
+            </div>
+            <div class="map-aside"><span class="map-label" data-map-label>MUESTRA · SIN CONFIRMAR</span><h3>El color también<br>ocupa un territorio.</h3><p>La posición compara matiz y croma. La luminosidad se reconoce en el color del punto y en sus valores OKLCH; los neutros, sin matiz asignable, se muestran aparte.</p><div class="map-legend" data-map-legend aria-label="Leyenda por marca"></div><p class="map-caveat">Una zona poco representada en esta muestra no demuestra por sí sola que exista una oportunidad de mercado.</p></div>
           </div>
+          <section class="comparison-section" aria-labelledby="comparison-title"><div class="data-section-heading"><p class="eyebrow">CÁLCULO DESCRIPTIVO</p><h3 id="comparison-title">Similitudes y diferencias</h3><p>Se comparan exclusivamente colores de paletas confirmadas; la menor distancia entre muestras no es una recomendación estratégica.</p></div><div class="comparison-list" data-comparison-list></div></section>
+          <section class="map-data-section" aria-labelledby="map-data-title"><div class="data-section-heading"><p class="eyebrow">LECTURA TRAZABLE</p><h3 id="map-data-title">Colores y procedencia</h3><p>Solo aparecen aquí colores de paletas confirmadas. Revisa fuente, método y confianza antes de interpretar similitudes.</p></div><div class="confirmed-color-list" data-confirmed-list></div><div class="neutral-section" data-neutral-section hidden><div class="data-section-heading"><p class="eyebrow">SIN MATIZ CROMÁTICO</p><h3>Neutros</h3><p>Blancos, negros y grises se clasifican por luminosidad; no se ubican artificialmente en una dirección de la rueda.</p></div><div class="neutral-list" data-neutral-list></div></div><div class="campaign-section" data-campaign-section hidden><div class="data-section-heading"><p class="eyebrow">LECTURA SEPARADA</p><h3>Colores de campaña</h3><p>Registrados como estacionales o promocionales; excluidos de la comparación de identidad estable.</p></div><div class="campaign-list" data-campaign-list></div></div></section>
+          <div class="analysis-explanation"><strong>Qué sabemos:</strong> códigos y agrupaciones calculados a partir de los logotipos y datos que has confirmado. <strong>Qué no sabemos:</strong> si la muestra representa todo el mercado ni si un color ausente es una oportunidad. Las conclusiones estratégicas son hipótesis a validar.</div>
         </section>
 
         <section class="screen work-screen" data-screen="4" aria-labelledby="territory-title" hidden>
