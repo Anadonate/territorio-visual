@@ -1,33 +1,23 @@
 # Territorio Visual
 
-Experiencia web estática de exploración de identidad visual, desarrollada con HTML, CSS y JavaScript nativo. No utiliza backend, servicios externos ni API de IA; es compatible con GitHub Pages.
+Territorio Visual es una herramienta breve de Ana Donate para comparar el color principal de un logotipo con los de otras marcas de referencia y obtener preguntas útiles para la estrategia visual.
 
-## Análisis cromático actual
+## Cómo funciona
 
-- El punto de partida son hasta tres logotipos subidos por el usuario en PNG, JPEG o SVG restringido.
-- Las imágenes se procesan localmente con Canvas; cada marca admite un archivo. Los archivos no se suben a un servidor. Las respuestas solo viven en la memoria de la página y se pierden al recargar.
-- Se rasteriza a un máximo de 320 px por lado. Los píxeles visibles se ponderan por su alfa; los píxeles completamente transparentes no se cuentan. Los valores RGB se agrupan por distancia euclídea OKLab < 0,055; las variantes neutras muy oscuras pueden agruparse hasta 0,11 para evitar duplicados casi negros.
-- El estimador de fondo toma una muestra de las bandas exteriores (6 % del lado menor) y calcula la concentración del color dominante. Se considera confianza alta desde 68 % de esa banda, media desde 38 % y baja por debajo de ese nivel. Con confianza alta se excluye por defecto; en los demás casos se pide confirmar si es fondo o parte del identificador.
-- Al excluir un fondo confirmado, se retiran píxeles conectados al borde con cercanía OKLab < 0,075 y tonos globalmente casi iguales al fondo (< 0,055). Esto permite quitar el fondo incluso en huecos tipográficos cerrados, pero puede excluir detalles del símbolo que coincidan con el fondo; se pueden reintroducir mediante «Incluir el fondo» o añadirlos manualmente.
-- Se priorizan grupos con píxeles interiores sólidos: para ello se valora la vecindad de 5 × 5 píxeles y la repetición tonal. Si no hay un núcleo sólido distinguible y todos los grupos son neutros sobre un fondo también neutro, se conserva el extremo con mayor contraste como una única estimación monocromática. Así los grises de suavizado no se presentan como colores de marca. El umbral de presencia del 2 % reduce motas, pero puede omitir detalles, trazos finos o acentos pequeños.
-- Los colores seleccionados son estimaciones de un archivo concreto, no una paleta corporativa certificada. Ningún color extraído se selecciona como principal automáticamente. Cada sugerencia se puede editar, eliminar o descartar; el usuario puede crear la paleta manualmente. Se recomiendan dos colores principales y se admiten tres como máximo en la comparación. Secundarios y neutros se guardan por separado.
-- Los colores manuales se registran como tales. La fuente oficial puede anotarse por el usuario, pero la aplicación no la consulta ni verifica. Los colores de campaña se distinguen y no entran en la comparación estable.
-- Los colores identificados como campaña/temporada se muestran aparte y no intervienen en la comparación estable. Solo se comparan paletas confirmadas.
-- La visualización posiciona cromáticos por ángulo de matiz y radio de luminosidad OKLCH (blanco L=1 en el centro, negro L=0 en el borde). Blancos, negros y grises aparecen sobre un eje vertical sin matiz. Cada punto incluye el color HEX confirmado, un contorno contrastante, forma de marca y etiqueta accesible; los solapamientos próximos se separan solo para dibujarlos y conservan una guía hacia la posición calculada.
-- «Colores y procedencia» organiza los mismos colores principales y secundarios confirmados del mapa en fichas por marca, con papel cromático y procedencia. «Colores complementarios» separa la selección confirmada por el usuario de una sugerencia geométrica (giro de 180° del matiz) que no se incorpora a la paleta ni se atribuye a la marca.
-- La lectura de diseño describe familias de matiz, luminosidad y croma de la muestra confirmada. No presenta estadísticas de mercado ni deduce oportunidades estratégicas; una muestra de hasta tres marcas no representa toda la categoría.
-- Las fases 04 y 05 se generan desde los campos y atributos elegidos en la fase 01 y las paletas confirmadas en la fase 02. Las tres rutas son estrategias paralelas; sus muestras calculadas se etiquetan como propuestas y no como colores oficiales. Las recomendaciones explican relación con la muestra, aplicación y validaciones pendientes.
-- La generación es determinista y no usa IA ni asociaciones universales entre adjetivos y tonos. Compara solo colores principales cromáticos confirmados: Familiar conserva un color observado y busca apoyo en la misma familia o en un análogo; Diferenciado usa el color confirmado perceptualmente más distante entre marcas cuando existe otra familia, o propone una relación complementaria cuando no hay contraste cromático observado; Expresivo explora una relación triádica desde un color confirmado y admite como acento opcional un complementario seleccionado por el usuario. Las relaciones generadas son hipótesis formales, no oportunidades de mercado ni colores oficiales. El sector, la audiencia, la descripción y los valores aportados adaptan la explicación, las jerarquías y las pruebas de aplicación, pero no fuerzan un color mediante reglas semánticas fijas. Si la muestra es monocromática o carece de anclaje cromático, se declara la limitación y no se inventan protagonistas cromáticos.
-- El sector, el público objetivo, la descripción y los valores se incluyen como criterios contextuales para justificar jerarquía y aplicación. No existe una equivalencia fija entre un adjetivo y un color: el tono parte de la muestra cromática, mientras la interpretación se valida en el contexto indicado.
-- El informe final incluye la lectura de la muestra, implicaciones para el contexto indicado, las tres rutas y una lista de pruebas. «Imprimir / guardar como PDF» abre la impresión del navegador; el usuario puede elegir «Guardar como PDF». No se usa un generador externo ni se crea un archivo automáticamente.
+1. Sube el logotipo de tu marca y los logotipos de referencia (hasta cuatro).
+2. La herramienta estima un color dominante de cada imagen en el navegador.
+3. Revisa y ajusta manualmente el color principal si la estimación incluye el fondo o no representa bien la marca.
+4. Compara las muestras y consulta una lectura de las familias cromáticas observadas, posibles implicaciones y próximos pasos para explorar.
 
-## Alcance y cautelas
+## Privacidad y límites
 
-La extracción es una aproximación a áreas de color sólido de una imagen: puede omitir acentos pequeños, trazos muy finos o degradados; confundir una textura de borde con el fondo; o excluir un detalle del logo que coincida con el fondo detectado. Los SVG con estilos, filtros, imágenes embebidas, scripts o referencias externas se rechazan; exporta esos logotipos a PNG/JPEG. El nombre del archivo y el origen introducido son datos declarados, no verificaciones de titularidad. Revisa las sugerencias y corrígelas antes de confirmar.
+- Los archivos se procesan en el navegador; no se envían a un servidor.
+- La extracción es una estimación de la imagen subida, no una verificación de los colores corporativos oficiales.
+- La clasificación por familias cromáticas es orientativa. Revisa los colores antes de interpretar los resultados.
+- Una muestra pequeña no representa todo un mercado y no demuestra por sí sola una oportunidad de diferenciación.
+- El color no determina por sí solo la personalidad, el reconocimiento ni el éxito de una marca.
+- La lectura puede guardarse mediante la opción de impresión del navegador, eligiendo «Guardar como PDF».
 
-Las descripciones de fase 03 se limitan a códigos confirmados y valores perceptuales. Las propuestas de fases 04 y 05 son exploraciones heurísticas, no asesoría automatizada definitiva: los valores seleccionados se tratan como criterios declarados, no como asociaciones universales. La interpretación requiere contexto adicional. Una muestra de hasta tres competidores no representa el mercado completo. La web general de una marca no se lee ni se usa para atribuirle colores. El informe se mantiene en memoria de la pestaña; al recargarlo se pierden las respuestas.
+## Desarrollo
 
-## Vista local
-
-Abre `index.html` en un navegador moderno o sirve la carpeta con cualquier servidor estático local. No es necesario instalar paquetes.
-
+Sitio estático hecho con HTML, CSS y JavaScript nativo. No necesita backend, instalación de paquetes ni API de IA. Para trabajar en local, abre `index.html` en un navegador moderno. El sitio se publica con GitHub Pages desde la rama `fase-2-redisenada`.
