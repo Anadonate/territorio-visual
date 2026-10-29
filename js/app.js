@@ -8,6 +8,8 @@
   const progressBar = document.querySelector('[role="progressbar"]');
   const nextButton = document.querySelector('[data-next]');
   const backButton = document.querySelector('[data-back]');
+  const attributeButtons = [...document.querySelectorAll('[data-attribute]')];
+  const attributeFeedback = document.querySelector('[data-attribute-feedback]');
   let currentStep = 1;
 
   function showWelcome() {
@@ -63,6 +65,21 @@
   });
   stepLinks.forEach((link) => {
     link.addEventListener('click', () => showStep(Number(link.dataset.goStep)));
+  });
+  attributeButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      const selected = attributeButtons.filter((item) => item.getAttribute('aria-pressed') === 'true');
+      const isSelected = button.getAttribute('aria-pressed') === 'true';
+
+      if (!isSelected && selected.length >= 3) {
+        attributeFeedback.textContent = 'Puedes seleccionar hasta tres atributos.';
+        return;
+      }
+
+      button.setAttribute('aria-pressed', String(!isSelected));
+      const selectedCount = attributeButtons.filter((item) => item.getAttribute('aria-pressed') === 'true').length;
+      attributeFeedback.textContent = `${selectedCount} de 3 seleccionados · Selección de diseño, no se guarda.`;
+    });
   });
   document.querySelector('[data-home]').addEventListener('click', (event) => {
     event.preventDefault();
