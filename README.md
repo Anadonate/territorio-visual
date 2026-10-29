@@ -5,13 +5,13 @@ Experiencia web estática de exploración de identidad visual, desarrollada con 
 ## Análisis cromático actual
 
 - El punto de partida son hasta tres logotipos subidos por el usuario en PNG, JPEG o SVG restringido.
-- Las imágenes se procesan localmente con Canvas; los archivos no se suben a un servidor. Las respuestas solo viven en la memoria de la página y se pierden al recargar.
-- Se rasteriza a un máximo de 144 px por lado. Se excluyen píxeles con alfa < 220/255, se cuantizan canales RGB a 4 bits y se agrupan colores por distancia euclídea OKLab < 0,055. Se muestran hasta seis grupos con presencia ≥ 0,8 % de los píxeles considerados.
+- Las imágenes se procesan localmente con Canvas; cada marca admite un archivo. Los archivos no se suben a un servidor. Las respuestas solo viven en la memoria de la página y se pierden al recargar.
+- Se rasteriza a un máximo de 144 px por lado. Se excluyen píxeles con alfa < 220/255, se cuantizan canales RGB a 4 bits y se agrupan colores por distancia euclídea OKLab < 0,055. Se muestran hasta cuatro grupos con presencia ≥ 2 % de los píxeles considerados.
 - Un fondo sólido se sugiere si las cuatro esquinas opacas son similares en OKLab (< 0,035); se excluyen por defecto píxeles a distancia < 0,045 de ese tono. El usuario puede incluir el fondo o añadir tonos omitidos manualmente.
 - En JPEG, grupos pequeños situados en la línea de mezcla RGB entre el fondo detectado y el color más frecuente se descartan como posibles halos de compresión; los degradados reales pueden necesitar corrección manual.
 - La selección extraída es una estimación de un archivo concreto, no una paleta corporativa certificada. Cada tono se puede editar o eliminar. Los colores manuales requieren código HEX y procedencia; las fuentes oficiales se declaran por el usuario, sin verificación automática.
 - Los colores identificados como campaña/temporada se muestran aparte y no intervienen en la comparación estable. Solo se comparan paletas confirmadas.
-- La visualización posiciona tonos cromáticos por ángulo de matiz y distancia proporcional a croma OKLCH. La luminosidad se comunica mediante el color real y el valor OKLCH. Blancos, negros y grises se clasifican por luminosidad y aparecen en una lista neutral, sin matiz inventado.
+- La visualización posiciona los colores cromáticos por ángulo de matiz y radio de luminosidad (blanco L=1 en el centro, negro L=0 en el borde). Cada punto conserva su HEX y su color real; el croma se muestra en los valores OKLCH. Blancos, negros y grises se ubican en una escala neutral independiente por luminosidad, sin asignarles un matiz.
 - Se calcula ΔE_OK como distancia euclídea en OKLab entre pares HEX confirmados. El umbral operativo ≤ 0,055 describe cercanía matemática dentro de la muestra; no prueba posicionamiento, reconocimiento ni oportunidad de mercado.
 
 ## Alcance y cautelas
