@@ -19,12 +19,8 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Download redesigned project archive
-        run: |
-          mkdir site
-          curl -fL "https://d2ol7oe51mr4n9.cloudfront.net/user_3JJYG4w5ULnCqNhjgVMDVSh24c3/7a33fb51-1894-40a5-b210-cbdc62a65907.zip" -o /tmp/territorio-visual.zip
-          unzip -q /tmp/territorio-visual.zip -d site
-          test -f site/index.html
+      - name: Checkout repository
+        uses: actions/checkout@v4
       - name: Configure Pages
         uses: actions/configure-pages@v5
         with:
@@ -32,7 +28,7 @@ jobs:
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: site
+          path: .
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
