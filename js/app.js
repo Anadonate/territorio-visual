@@ -18,6 +18,7 @@
     colors: [], extracted: [], dismissedExtracted: new Set(), secondary: [], confirmed: false,
   }]));
   let currentStep = 1;
+  let latestTerritories = [];
 
   function showWelcome() {
     welcome.hidden = false;
@@ -68,6 +69,8 @@
 
     const title = screens[currentStep - 1].querySelector('h2');
     if (currentStep === 3) renderMap();
+    if (currentStep === 4) renderTerritories();
+    if (currentStep === 5) renderReport();
     document.title = `${title.innerText.replace(/\s+/g, ' ').trim()} · Territorio Visual`;
     history.replaceState(null, '', `#paso-${currentStep}`);
     if (moveFocus) title.focus({ preventScroll: true });
@@ -203,8 +206,9 @@
   function renderSecondary(card) {
     const brand = brandData.get(card.dataset.brandId); const list = card.querySelector('[data-secondary-list]'); list.replaceChildren();
     const neutralColors = brand.secondary.filter((color) => color.kind === 'neutral');
-    const secondaryColors = brand.secondary.filter((color) => color.kind !== 'neutral');
-    [[secondaryColors, 'Colores secundarios'], [neutralColors, 'Neutros · blanco, negro y grises']].forEach(([colors, title]) => {
+    const complementaryColors = brand.secondary.filter((color) => color.kind !== 'neutral' && color.role === 'complementary');
+    const secondaryColors = brand.secondary.filter((color) => color.kind !== 'neutral' && color.role !== 'complementary');
+    [[secondaryColors, 'Colores secundarios'], [complementaryColors, 'Complementarios elegidos por ti'], [neutralColors, 'Neutros · blanco, negro y grises']].forEach(([colors, title]) => {
       const group = document.createElement('section'); group.className = 'secondary-color-group';
       const heading = document.createElement('h4'); heading.textContent = title;
       const entries = document.createElement('div'); entries.className = 'secondary-color-entries';
@@ -362,6 +366,9 @@
     card.querySelector('[data-add-secondary]').addEventListener('click', () => {
       brand.secondary.push({ id: `${card.dataset.brandId}-secondary-${Date.now()}`, hex: '', source: 'manual', sourceNote: '', share: null }); renderPalette(card); card.querySelector('[data-color-hex]:last-of-type')?.focus();
     });
+    card.querySelector('[data-add-complementary]').addEventListener('click', () => {
+      brand.secondary.push({ id: `${card.dataset.brandId}-complementary-${Date.now()}`, hex: '', source: 'manual', sourceNote: '', share: null, role: 'complementary' }); renderPalette(card); card.querySelector('[data-color-hex]:last-of-type')?.focus();
+    });
     card.querySelector('[data-add-neutral]').addEventListener('click', () => {
       brand.secondary.push({ id: `${card.dataset.brandId}-neutral-${Date.now()}`, hex: '', source: 'manual', sourceNote: '', kind: 'neutral', share: null }); renderPalette(card); card.querySelector('[data-color-hex]:last-of-type')?.focus();
     });
@@ -474,8 +481,10 @@
     const identity = document.createElement('div'); identity.className = 'confirmed-identity';
     const heading = document.createElement('strong'); heading.textContent = brand.name;
     const code = document.createElement('code'); code.textContent = color.hex;
-    const values = document.createElement('span'); values.className = 'color-values'; values.textContent = formatOklch(color.oklch);
-    identity.append(heading, code, values);
+    const values = document.createElement('span'); values.className = 'color-values'; values.textContent = formatOklch(color.oklch || window.TerritorioColor.toOklch(color.hex));
+    identity.append(heading);
+    if (color.role) { const role = document.createElement('span'); role.className = 'color-values'; role.textContent = color.role; identity.append(role); }
+    identity.append(code, values);
     const provenance = document.createElement('p'); provenance.className = 'confirmed-provenance'; provenance.textContent = sourceDescription(color, brand);
     row.append(swatch, identity, provenance);
     if (color.share !== null && color.share !== undefined) {
@@ -485,19 +494,69 @@
     container.append(row);
   }
 
+  function renderBrandColorCards(container, brands) {
+    container.replaceChildren();
+    brands.forEach(({ data }) => {
+      const card = document.createElement('article'); card.className = 'brand-color-card';
+      const heading = document.createElement('h4'); heading.textContent = data.name; card.append(heading);
+      const colors = [
+        ...data.colors.map((color) => ({ ...color, role: 'Principal' })),
+        ...data.secondary.map((color) => ({ ...color, role: color.role === 'complementary' ? 'Complementario' : (color.kind === 'neutral' ? 'Neutro · secundario' : 'Secundario') })),
+      ].filter((color) => color.source !== 'campaign' && allowedHex.test(color.hex));
+      if (!colors.length) { const empty = document.createElement('p'); empty.className = 'palette-empty'; empty.textContent = 'Sin colores confirmados.'; card.append(empty); }
+      colors.forEach((color) => {
+        const row = document.createElement('div'); row.className = 'brand-confirmed-color';
+        const swatch = document.createElement('span'); swatch.className = 'confirmed-swatch'; swatch.style.backgroundColor = color.hex;
+        const detail = document.createElement('div'); detail.className = 'brand-confirmed-detail';
+        const role = document.createElement('strong'); role.textContent = color.role;
+        const code = document.createElement('code'); code.textContent = color.hex;
+        const source = document.createElement('p'); source.textContent = sourceDescription(color, data);
+        detail.append(role, code, source); row.append(swatch, detail); card.append(row);
+      });
+      container.append(card);
+    });
+  }
+
+  function renderVisualObservations(container, brands) {
+    container.replaceChildren();
+    const entries = brands.map((brand) => ({
+      ...brand,
+      stableColors: [...brand.colors, ...brand.secondary].filter((color) => color.source !== 'campaign' && allowedHex.test(color.hex)),
+    })).filter((brand) => brand.stableColors.length);
+    const note = (title, copy) => { const item = document.createElement('article'); item.className = 'visual-observation'; const h = document.createElement('h4'); h.textContent = title; const p = document.createElement('p'); p.textContent = copy; item.append(h,p); container.append(item); };
+    if (!entries.length) { note('Aún no hay colores confirmados', 'Confirma una o más paletas para describir lo que aparece en esta muestra.'); return; }
+    const palette = entries.flatMap((brand) => brand.stableColors.map((color) => ({ ...color, brand: brand.name, oklch: window.TerritorioColor.toOklch(color.hex) })));
+    const family = (color) => {
+      const { h, C } = color.oklch;
+      if (h === null || C < 0.025) return 'neutros';
+      if (h < 25 || h >= 345) return 'rojos'; if (h < 50) return 'naranjas'; if (h < 70) return 'amarillos';
+      if (h < 165) return 'verdes'; if (h < 205) return 'turquesas'; if (h < 255) return 'azules'; if (h < 290) return 'índigos'; return 'violetas';
+    };
+    const lightness = (L) => L < 0.3 ? 'profunda' : L > 0.82 ? 'clara' : 'intermedia';
+    const chroma = (C) => C < 0.025 ? 'acromática' : C < 0.075 ? 'suavizada' : 'saturada';
+    const descriptions = entries.map((brand) => {
+      const colors = brand.stableColors.map((color) => ({ ...color, oklch: window.TerritorioColor.toOklch(color.hex) }));
+      const families = [...new Set(colors.map(family))];
+      const tones = [...new Set(colors.map((color) => `${lightness(color.oklch.L)} y ${chroma(color.oklch.C)}`))];
+      return `${brand.name}: ${families.join(' y ')}; ${tones.join(', ')}.`;
+    });
+    const shared = [...new Set(entries.flatMap((brand) => brand.stableColors.map(family)))];
+    note('Carácter de las paletas', descriptions.join(' '));
+    note('Códigos cromáticos compartidos', shared.length ? `En esta selección aparecen ${shared.join(', ')}. Las diferencias entre marcas se leen en los HEX confirmados y en sus valores OKLCH; la muestra no permite concluir cómo se distribuye toda la categoría.` : 'Aún no hay suficientes colores confirmados para comparar recursos cromáticos.');
+    note('Punto de partida para diseñar', 'Usa estos contrastes observados —matiz, claridad y saturación— como material de exploración. La decisión de identidad deberá validarse con contexto de marca, público y aplicaciones.');
+  }
+
   function renderMap() {
     const svg = document.querySelector('[data-map-data]');
     if (!svg) return;
     svg.replaceChildren();
     const stable = [];
-    const neutral = [];
     const campaign = [];
     const confirmedBrands = [...brandCards].map((card) => ({ card, data: brandData.get(card.dataset.brandId) })).filter(({ data }) => data.confirmed);
-    confirmedBrands.forEach(({ card, data }, brandIndex) => data.colors.forEach((color) => {
+    confirmedBrands.forEach(({ card, data }, brandIndex) => [...data.colors.map((color)=>({...color,role:'Principal'})),...data.secondary.map((color)=>({...color,role:color.role==='complementary'?'Complementario':(color.kind==='neutral'?'Neutro · secundario':'Secundario')}))].forEach((color) => {
       const enriched = { ...color, oklch: window.TerritorioColor.toOklch(color.hex) };
       const datum = { ...enriched, brand: data, brandIndex };
       if (enriched.source === 'campaign') campaign.push(datum);
-      else if (enriched.oklch.neutral) neutral.push(datum);
       else stable.push(datum);
     }));
 
@@ -505,23 +564,19 @@
     const label = document.querySelector('[data-map-label]');
     const legend = document.querySelector('[data-map-legend]');
     const colorList = document.querySelector('[data-confirmed-list]');
-    const neutralSection = document.querySelector('[data-neutral-section]');
-    const neutralList = document.querySelector('[data-neutral-list]');
-    const neutralRamp = document.querySelector('[data-neutral-ramp]');
     const campaignSection = document.querySelector('[data-campaign-section]');
     const campaignList = document.querySelector('[data-campaign-list]');
-    const comparisonList = document.querySelector('[data-comparison-list]');
+    const observations = document.querySelector('[data-visual-observations]');
+    const complementaryList = document.querySelector('[data-complementary-list]');
     const emptyMap = document.querySelector('[data-map-empty]');
-    legend.replaceChildren(); colorList.replaceChildren(); neutralList.replaceChildren(); neutralRamp.replaceChildren(); campaignList.replaceChildren(); comparisonList.replaceChildren();
+    legend.replaceChildren(); colorList.replaceChildren(); campaignList.replaceChildren(); observations.replaceChildren(); complementaryList.replaceChildren();
     emptyMap.hidden = stable.length > 0;
-    emptyMap.textContent = neutral.length || campaign.length
-      ? 'La muestra confirmada contiene neutros o colores estacionales, pero ningún tono cromático para ubicar.'
-      : 'Sin datos cromáticos confirmados.';
+    emptyMap.textContent = stable.length ? '' : 'Sin colores confirmados.';
     if (!confirmedBrands.length) {
       summary.textContent = 'Aún no hay datos confirmados. Vuelve a la pantalla anterior para revisar y confirmar una paleta.';
       label.textContent = 'MUESTRA · SIN CONFIRMAR';
     } else {
-      const stableCount = stable.length + neutral.length;
+      const stableCount = stable.length;
       summary.textContent = stableCount
         ? `Lectura descriptiva de ${stableCount} colores confirmados en ${confirmedBrands.length} ${confirmedBrands.length === 1 ? 'marca' : 'marcas'}. La muestra puede ser insuficiente para inferir patrones de categoría.`
         : 'Hay marcas confirmadas, pero todavía no hay colores estables que comparar. Los tonos de campaña se muestran aparte.';
@@ -529,7 +584,7 @@
     }
 
     confirmedBrands.forEach(({ data }, brandIndex) => {
-      const count = data.colors.filter((color) => color.source !== 'campaign').length;
+      const count = [...data.colors, ...data.secondary].filter((color) => color.source !== 'campaign' && allowedHex.test(color.hex)).length;
       if (!count) return;
       const item = document.createElement('span'); item.className = `brand-legend brand-symbol-${brandIndex}`;
       const symbol = document.createElement('i'); symbol.setAttribute('aria-hidden', 'true');
@@ -538,79 +593,230 @@
       item.append(symbol, name, total); legend.append(item);
     });
 
-    stable.forEach((datum) => {
+    const plotted=[];
+    stable.forEach((datum, pointIndex) => {
       const { oklch } = datum;
       const radius = (1 - oklch.L) * 190;
-      const angle = (oklch.h - 90) * Math.PI / 180;
-      const cx = 200 + Math.cos(angle) * radius;
-      const cy = 200 + Math.sin(angle) * radius;
-      let point;
-      if (datum.brandIndex === 1) point = createSvgElement('polygon', { points: `${cx},${cy - 8} ${cx + 8},${cy} ${cx},${cy + 8} ${cx - 8},${cy}`, fill: datum.hex, stroke: '#fffefc', 'stroke-width': 2 });
-      else if (datum.brandIndex === 2) point = createSvgElement('rect', { x: cx - 7, y: cy - 7, width: 14, height: 14, rx: 1, fill: datum.hex, stroke: '#fffefc', 'stroke-width': 2 });
-      else point = createSvgElement('circle', { cx, cy, r: 7, fill: datum.hex, stroke: '#fffefc', 'stroke-width': 2 });
-      const group = createSvgElement('g', { class: 'map-point', tabindex: 0, role: 'img', 'aria-label': `${datum.brand.name}, ${datum.hex}, ${formatOklch(oklch)}` });
+      const angle = oklch.h === null ? -Math.PI / 2 : (oklch.h - 90) * Math.PI / 180;
+      const trueX=200+Math.cos(angle)*radius, trueY=200+Math.sin(angle)*radius;
+      const overlaps=plotted.filter((p)=>Math.hypot(p.x-trueX,p.y-trueY)<18).length;
+      const nudge=overlaps?12+Math.min(overlaps,2)*3:0, nudgeAngle=pointIndex*2.399963229728653;
+      const cx=trueX+Math.cos(nudgeAngle)*nudge, cy=trueY+Math.sin(nudgeAngle)*nudge; plotted.push({x:trueX,y:trueY});
+      if(nudge) svg.append(createSvgElement('line',{x1:trueX,y1:trueY,x2:cx,y2:cy,stroke:'#29272a','stroke-width':1,'stroke-dasharray':'2 2','aria-hidden':'true'}));
+      const point = createSvgElement('circle', { cx, cy, r: 9, fill: '#fffefc', stroke: '#29272a', 'stroke-width': 1.5 });
+      const colorMark = datum.brandIndex === 1
+        ? createSvgElement('polygon', { points: `${cx},${cy - 6} ${cx + 6},${cy} ${cx},${cy + 6} ${cx - 6},${cy}`, fill: datum.hex, stroke: '#fffefc', 'stroke-width': 1.5 })
+        : datum.brandIndex === 2
+          ? createSvgElement('rect', { x: cx - 5, y: cy - 5, width: 10, height: 10, fill: datum.hex, stroke: '#fffefc', 'stroke-width': 1.5 })
+          : createSvgElement('circle', { cx, cy, r: 5, fill: datum.hex, stroke: '#fffefc', 'stroke-width': 1.5 });
+      const group = createSvgElement('g', { class: `map-point ${oklch.h === null ? 'map-point-neutral' : ''}`, tabindex: 0, role: 'img', 'aria-label': `${datum.brand.name}, ${datum.hex}, ${datum.role}, ${formatOklch(oklch)}` });
       const title = createSvgElement('title'); title.textContent = `${datum.brand.name} · ${datum.hex} · ${formatOklch(oklch)}`;
-      group.append(title, point); svg.append(group);
-      renderColorEntry(colorList, datum, datum.brand, colorList.children.length);
+      group.append(title, point, colorMark); svg.append(group);
     });
-
-    neutralSection.hidden = neutral.length === 0;
-    if (neutral.length) {
-      const track = document.createElement('div'); track.className = 'neutral-track';
-      neutral.forEach((datum) => {
-        const marker = document.createElement('span'); marker.className = 'neutral-marker';
-        const neutralPosition = (1 - datum.oklch.L) * 100;
-        marker.style.left = `${neutralPosition}%`;
-        if (neutralPosition < 24) marker.classList.add('neutral-marker-start');
-        if (neutralPosition > 76) marker.classList.add('neutral-marker-end');
-        marker.style.backgroundColor = datum.hex;
-        marker.setAttribute('role', 'img');
-        marker.setAttribute('aria-label', `${datum.brand.name}, ${datum.hex}, ${formatOklch(datum.oklch)}`);
-        const title = document.createElement('span'); title.textContent = `${datum.brand.name} · ${datum.hex}`;
-        marker.append(title); track.append(marker);
-      });
-      const whiteLabel = document.createElement('span'); whiteLabel.className = 'neutral-ramp-white'; whiteLabel.textContent = 'L 100 · BLANCO';
-      const blackLabel = document.createElement('span'); blackLabel.className = 'neutral-ramp-black'; blackLabel.textContent = 'L 0 · NEGRO';
-      neutralRamp.append(track, whiteLabel, blackLabel);
-    }
-    neutral.forEach((datum, index) => renderColorEntry(neutralList, datum, datum.brand, index));
+    renderBrandColorCards(colorList,confirmedBrands);
+    const userComplements=confirmedBrands.flatMap(({data})=>data.secondary.filter((c)=>c.role==='complementary').map((c)=>({data,color:c})));
+    userComplements.forEach(({data,color})=>renderColorEntry(complementaryList,{...color,role:'Complementario elegido por ti'},data,complementaryList.children.length));
+    const suggestionTitle=document.createElement('p'); suggestionTitle.className='complementary-suggestion-note'; suggestionTitle.textContent='Sugerencias geométricas · no confirmadas ni atribuidas a la marca'; complementaryList.append(suggestionTitle);
+    const suggested=new Set();
+    stable.filter((d)=>d.role==='Principal' && d.oklch.h!==null).forEach((d)=>{ const hex=window.TerritorioColor.complementaryHex(d.hex); const key=`${d.brand.name}-${hex}`; if(suggested.has(key))return; suggested.add(key); const row=document.createElement('article'); row.className='confirmed-color complementary-suggestion'; const swatch=document.createElement('span'); swatch.className='confirmed-swatch'; swatch.style.backgroundColor=hex; const identity=document.createElement('div'); identity.className='confirmed-identity'; const heading=document.createElement('strong'); heading.textContent=`Sugerencia para ${d.brand.name}`; const code=document.createElement('code'); code.textContent=hex; const provenance=document.createElement('p'); provenance.className='confirmed-provenance'; provenance.textContent=`Complemento geométrico sugerido para ${d.hex}. No está confirmado ni atribuido a la marca.`; identity.append(heading,code,provenance); row.append(swatch,identity); complementaryList.append(row); });
     campaignSection.hidden = campaign.length === 0;
     campaign.forEach((datum, index) => renderColorEntry(campaignList, datum, datum.brand, index));
 
-    const comparisonBrands = confirmedBrands.map(({ data }) => ({
-      name: data.name,
-      colors: data.colors.filter((color) => color.source !== 'campaign'),
-    })).filter((brand) => brand.colors.length);
-    if (comparisonBrands.length < 2) {
-      const note = document.createElement('p'); note.className = 'comparison-empty';
-      note.textContent = 'Se necesitan al menos dos marcas con colores estables confirmados para comparar similitudes y diferencias. Con esta muestra todavía no hay una lectura entre marcas.';
-      comparisonList.append(note);
-    } else {
-      for (let firstIndex = 0; firstIndex < comparisonBrands.length; firstIndex += 1) {
-        for (let secondIndex = firstIndex + 1; secondIndex < comparisonBrands.length; secondIndex += 1) {
-          const first = comparisonBrands[firstIndex]; const second = comparisonBrands[secondIndex];
-          let closest = null;
-          first.colors.forEach((firstColor) => second.colors.forEach((secondColor) => {
-            const delta = window.TerritorioColor.deltaEOK(firstColor.hex, secondColor.hex);
-            if (!closest || delta < closest.delta) closest = { firstColor, secondColor, delta };
-          }));
-          const item = document.createElement('article'); item.className = 'comparison-pair';
-          const heading = document.createElement('h4'); heading.textContent = `${first.name} ↔ ${second.name}`;
-          const pairColors = document.createElement('div'); pairColors.className = 'comparison-swatches';
-          [closest.firstColor, closest.secondColor].forEach((color, index) => {
-            const entry = document.createElement('span'); entry.className = 'comparison-swatch';
-            const swatch = document.createElement('i'); swatch.style.backgroundColor = color.hex;
-            const code = document.createElement('code'); code.textContent = `${index === 0 ? first.name : second.name} · ${color.hex}`;
-            entry.append(swatch, code); pairColors.append(entry);
-          });
-          const result = document.createElement('p');
-          result.textContent = `Par más próximo: ΔE_OK ${closest.delta.toFixed(3)} · ${closest.delta <= 0.055 ? 'proximidad cromática operativa (≤ 0,055)' : 'diferencia perceptual sobre el umbral operativo (0,055)'}.`;
-          const caveat = document.createElement('small'); caveat.textContent = 'Comparación matemática de HEX confirmados; no mide reconocimiento ni posicionamiento.';
-          item.append(heading, pairColors, result, caveat); comparisonList.append(item);
-        }
-      }
-    }
+    renderVisualObservations(observations, confirmedBrands.map(({data}) => data));
   }
+
+  function hueFamily(oklch) {
+    if (oklch.h === null || oklch.C < 0.025) return 'neutros';
+    if (oklch.h < 25 || oklch.h >= 345) return 'rojos'; if (oklch.h < 50) return 'naranjas'; if (oklch.h < 70) return 'amarillos';
+    if (oklch.h < 165) return 'verdes'; if (oklch.h < 205) return 'turquesas'; if (oklch.h < 255) return 'azules'; if (oklch.h < 290) return 'índigos'; return 'violetas';
+  }
+
+  function collectSession() {
+    const competitors = [...brandData.values()].filter((brand) => brand.confirmed).map((brand) => ({
+      name: brand.name || 'Marca sin nombre',
+      colors: [...brand.colors.map((color) => ({ ...color, role: 'Principal' })), ...brand.secondary.map((color) => ({ ...color, role: color.role === 'complementary' ? 'Complementario' : (color.kind === 'neutral' ? 'Neutro · secundario' : 'Secundario') }))].filter((color) => color.source !== 'campaign' && allowedHex.test(color.hex)).map((color) => ({ ...color, oklch: window.TerritorioColor.toOklch(color.hex) })),
+    }));
+    const allColors = competitors.flatMap((brand) => brand.colors.map((color) => ({ ...color, brand: brand.name })));
+    const mainColors = allColors.filter((color) => color.role === 'Principal' && color.kind !== 'neutral' && color.oklch.h !== null);
+    const manualComplements = allColors.filter((color) => color.role === 'complementary');
+    const familyPresence = new Map();
+    mainColors.forEach((color) => {
+      const family = hueFamily(color.oklch); const entry = familyPresence.get(family) || { brands: new Set(), count: 0 };
+      entry.brands.add(color.brand); entry.count += 1; familyPresence.set(family, entry);
+    });
+    const dominantFamily = [...familyPresence].sort((a, b) => b[1].brands.size - a[1].brands.size || b[1].count - a[1].count)[0] || null;
+    const seed = dominantFamily ? mainColors.find((color) => hueFamily(color.oklch) === dominantFamily[0]) : manualComplements.find((color) => color.oklch.h !== null) || null;
+    const contrastPool = seed ? mainColors.filter((color) => color.hex !== seed.hex) : [];
+    const acrossBrands = contrastPool.filter((color) => color.brand !== seed.brand);
+    const contrastSeed = seed ? [...(acrossBrands.length ? acrossBrands : contrastPool)].sort((a, b) => window.TerritorioColor.deltaEOK(seed.hex, b.hex) - window.TerritorioColor.deltaEOK(seed.hex, a.hex))[0] || null : null;
+    return {
+      name: document.querySelector('#brand-name').value.trim() || 'Tu marca',
+      sector: document.querySelector('#brand-sector').value.trim(),
+      audience: document.querySelector('#brand-audience').value.trim(),
+      description: document.querySelector('#brand-description').value.trim(),
+      values: attributeButtons.filter((button) => button.getAttribute('aria-pressed') === 'true').map((button) => button.textContent.trim()),
+      competitors, allColors, mainColors, dominantFamily, seed, contrastSeed, manualComplements,
+    };
+  }
+
+  function buildTerritories(session) {
+    const seed = session.seed; const contrast = session.contrastSeed;
+    const hasCrossFamilyContrast = Boolean(seed && contrast && hueFamily(contrast.oklch) !== hueFamily(seed.oklch));
+    const values = session.values.length ? session.values.join(', ') : 'sin valores seleccionados';
+    const audience = session.audience || 'público objetivo aún por definir';
+    const evidenceIsLimited = session.competitors.length < 2 || session.mainColors.length < 3;
+    const evidenceNote = evidenceIsLimited
+      ? `Base limitada: ${session.competitors.length} marcas y ${session.mainColors.length} colores principales cromáticos confirmados. La lectura describe esta selección, no un patrón general del sector.`
+      : `Muestra: ${session.competitors.length} marcas y ${session.mainColors.length} colores principales cromáticos confirmados. El recuento indica repetición en la muestra, no porcentaje de superficie ni oportunidad de mercado.`;
+    const repeated = session.dominantFamily
+      ? `${session.dominantFamily[0]} aparece en ${session.dominantFamily[1].brands.size} de ${session.competitors.length} marcas y suma ${session.dominantFamily[1].count} muestras. Describe los códigos aportados, no su peso visual en el mercado.`
+      : 'No hay una familia cromática principal confirmada que permita describir un patrón.';
+    const proposal = (hex, role, note, status = 'propuesta') => ({ hex, role, note, status });
+    const exact = (color, role) => proposal(color.hex, role, `Muestra confirmada de ${color.brand}; se usa como referencia, no se atribuye a tu marca.`, 'dato observado');
+    const deriveHue = (base, delta, scale = 1) => window.TerritorioColor.adjustOklch(base.hex, {
+      h: (base.oklch.h + delta + 360) % 360,
+      L: base.oklch.L,
+      C: Math.max(.04, Math.min(.28, base.oklch.C * scale)),
+    });
+    const generated = (hex, role, base, relation) => proposal(hex, role, `Matiz generado desde ${base.hex} mediante una relación ${relation}; es una exploración, no un color oficial.`, 'propuesta');
+    const uniqueChromatic = (hex, base) => window.TerritorioColor.deltaEOK(hex, base.hex) < .055 ? deriveHue(base, 35, .9) : hex;
+    const sameFamilySupport = seed ? session.mainColors.find((color) => color.hex !== seed.hex && hueFamily(color.oklch) === hueFamily(seed.oklch)) : null;
+    const analogous = seed ? uniqueChromatic(deriveHue(seed, 24, .92), seed) : null;
+    const familiarPalette = seed ? [exact(seed, 'Protagonista · código observado'), sameFamilySupport ? exact(sameFamilySupport, 'Apoyo · código observado') : generated(analogous, 'Apoyo cromático · análogo', seed, 'análoga de matiz')] : [];
+    let differentiatedPalette = [];
+    if (hasCrossFamilyContrast) {
+      const support = uniqueChromatic(deriveHue(contrast, 24, .9), contrast);
+      differentiatedPalette = [exact(contrast, 'Protagonista · contraste observado'), generated(support, 'Apoyo cromático · análogo', contrast, 'análoga de matiz')];
+    } else if (seed) {
+      const opposite = window.TerritorioColor.complementaryHex(seed.hex);
+      differentiatedPalette = [generated(opposite, 'Protagonista · contraste propuesto', seed, 'complementaria de matiz'), exact(seed, 'Apoyo · código observado')];
+    }
+    const selectedComplement = session.manualComplements.find((color) => color.oklch.h !== null);
+    const expressivePalette = seed ? [
+      generated(deriveHue(seed, 120, .88), 'Protagonista · relación triádica', seed, 'triádica'),
+      generated(deriveHue(seed, 240, .78), 'Apoyo cromático · relación triádica', seed, 'triádica'),
+      ...(selectedComplement ? [proposal(selectedComplement.hex, 'Acento opcional · seleccionado', `Color elegido por ti, procedente de ${selectedComplement.brand}; no implica que sea un color oficial de esa marca.`, 'confirmado por el usuario')] : []),
+    ] : [];
+    const noChromaticData = !seed;
+    const insufficient = 'La muestra confirmada es monocromática o no contiene colores principales cromáticos suficientes. No se propone un matiz nuevo a partir del negro, blanco o gris; añade un color objetivo o una referencia cromática para comparar estas direcciones.';
+    const criteria = `Los criterios declarados (${values}) orientan jerarquía, proporción y tono de aplicación; no les asignamos significados cromáticos universales.`;
+    const territoryData = [
+      {
+        id: 'familiar', title: 'Familiar', tag: 'EVOLUCIONAR CÓDIGOS', premise: 'Mantener un anclaje reconocible y cambiar su tratamiento, proporción y contraste.',
+        why: seed ? `El color protagonista conserva el código ${hueFamily(seed.oklch)} observado en ${seed.brand}.` : insufficient,
+        relation: repeated,
+        difference: 'Es la ruta de mayor continuidad: utiliza un código existente y un apoyo análogo para desarrollarlo sin copiar la paleta completa de una referencia.',
+        application: `Usa el color observado en el identificador o elementos recurrentes y limita el análogo a navegación, fondos de sección o acentos. En ${session.sector || 'la categoría indicada'}, prueba las piezas que más verá ${audience}.`,
+        validation: 'Comprueba que no se confunda con las referencias al reducir la paleta a logotipo, avatar y una pieza digital; revisa contraste texto/fondo.',
+        palette: familiarPalette,
+      },
+      {
+        id: 'distinct', title: 'Diferenciado', tag: 'DESTACAR CON INTENCIÓN', premise: 'Elegir un contraste perceptible dentro de esta muestra y explicar qué se gana y qué debe validarse.',
+        why: seed ? `${hasCrossFamilyContrast ? `${contrast.hex} (${hueFamily(contrast.oklch)}) es el color confirmado más alejado del anclaje ${seed.hex} en esta selección.` : `Se explora un matiz complementario a ${seed.hex} porque no hay otra familia cromática confirmada para comparar.`}` : insufficient,
+        relation: repeated,
+        difference: 'A diferencia de Familiar, cambia el protagonista hacia el color más contrastante disponible; una muestra breve no demuestra que ese código sea diferenciador en todo el mercado.',
+        application: `Reserva el contraste para una llamada, navegación o señal visual y usa el color observado como apoyo. Evalúa su adecuación con ${audience} y con el posicionamiento de ${session.sector || 'la marca'}.`,
+        validation: 'Valida reconocimiento, contraste accesible, reproducción en pantalla e impresión y legibilidad. No concluyas que el color diferencia fuera de las referencias comparadas.',
+        palette: differentiatedPalette,
+      },
+      {
+        id: 'expressive', title: 'Expresivo', tag: 'CONSTRUIR UN CÓDIGO PROPIO', premise: 'Explorar una relación cromática deliberada que requiere validación antes de adoptarse.',
+        why: seed ? `La combinación triádica toma ${seed.hex} como anclaje de la muestra y propone dos matices relacionados para explorar una gramática propia.` : insufficient,
+        relation: seed ? `La referencia es ${seed.brand} (${seed.hex}); los otros tonos son propuestas formales, no datos observados. ${selectedComplement ? `El acento ${selectedComplement.hex} fue seleccionado por ti y procede de ${selectedComplement.brand}.` : 'No se añade un tercer color porque no has seleccionado un complementario cromático.'}` : 'La muestra no ofrece un anclaje cromático del que derivar con rigor esta exploración.',
+        difference: 'Familiar conserva un código observado; Diferenciado contrasta con una referencia disponible; Expresivo construye una relación de tres matices que aún debe validarse.',
+        application: `Asigna funciones distintas mediante escala, frecuencia y tipografía, no por significados universales. Contrasta la combinación con ${session.values.length ? `tus criterios (${values})` : 'los valores que definas'} y con ${audience}.`,
+        validation: 'Prueba fondos y texto, legibilidad, reproducción y coherencia entre logotipo, web y piezas; reduce la frecuencia de un matiz si compite con el mensaje.',
+        palette: expressivePalette,
+      },
+    ];
+    territoryData.forEach((territory) => {
+      const seen = new Set(); territory.palette = territory.palette.filter((color) => { if (!color.hex || seen.has(color.hex)) return false; seen.add(color.hex); return true; });
+      territory.evidenceLimited = evidenceIsLimited;
+      territory.noChromaticData = noChromaticData;
+      territory.insufficientMessage = insufficient;
+      territory.evidenceNote = evidenceNote;
+    });
+    return territoryData;
+  }
+
+  function addText(parent, tag, text, className = '') {
+    const element = document.createElement(tag); if (className) element.className = className; element.textContent = text; parent.append(element); return element;
+  }
+
+  function addStrategyParagraph(card, label, text) {
+    const section = document.createElement('section'); section.className = 'territory-rationale';
+    addText(section, 'h4', label); addText(section, 'p', text); card.append(section);
+  }
+
+  function renderTerritories() {
+    const session = collectSession(); latestTerritories = buildTerritories(session);
+    const context = document.querySelector('[data-territory-context]'); context.replaceChildren();
+    const values = session.values.length ? session.values.join(' · ') : 'Sin atributos seleccionados';
+    addText(context, 'p', `${session.name}${session.sector ? ` · ${session.sector}` : ''}`, 'territory-context-title');
+    addText(context, 'p', `Público: ${session.audience || 'por definir'} · Criterios declarados: ${values}. ${session.description || 'Añade una descripción para afinar la recomendación.'}`, 'territory-context-copy');
+    addText(context, 'p', `Los criterios orientan jerarquía, proporción y aplicación; no se traducen a asociaciones cromáticas universales. ${latestTerritories[0]?.evidenceNote || ''}`, 'territory-evidence');
+    const grid = document.querySelector('[data-territories]'); grid.replaceChildren();
+    latestTerritories.forEach((territory, index) => {
+      const card = document.createElement('article'); card.className = `territory-card ${territory.id}`;
+      const top = document.createElement('div'); top.className = 'territory-top'; addText(top, 'span', String.fromCharCode(65 + index), 'territory-no'); addText(top, 'span', territory.tag, 'territory-tag'); card.append(top);
+      addText(card, 'h3', territory.title); addText(card, 'p', territory.premise, 'territory-premise');
+      const palette = document.createElement('div'); palette.className = 'proposal-palette'; palette.setAttribute('aria-label', `Paleta propuesta ${territory.title}`);
+      territory.palette.forEach((color) => { const item = document.createElement('div'); item.className = 'proposal-color'; const swatch = document.createElement('span'); swatch.className = 'proposal-swatch'; swatch.style.backgroundColor = color.hex; const detail = document.createElement('div'); addText(detail, 'strong', color.role); addText(detail, 'code', color.hex); addText(detail, 'small', color.note); item.append(swatch, detail); palette.append(item); });
+      if (!territory.palette.length) addText(palette, 'p', territory.insufficientMessage, 'palette-empty');
+      card.append(palette);
+      addStrategyParagraph(card, 'Por qué encaja', territory.why); addStrategyParagraph(card, 'Relación con la muestra', territory.relation); addStrategyParagraph(card, 'Cómo aplicarla', territory.application); addStrategyParagraph(card, 'Qué validar', territory.validation);
+      grid.append(card);
+    });
+  }
+
+  function renderReport() {
+    const session = collectSession(); if (!latestTerritories.length) latestTerritories = buildTerritories(session);
+    const observation = document.querySelector('[data-report-observation]'); observation.replaceChildren();
+    addText(observation, 'h4', 'A. Lectura visual de la competencia');
+    const families = new Map(); session.mainColors.forEach((color) => { const key = hueFamily(color.oklch); families.set(key, (families.get(key) || 0) + 1); });
+    const repeated = [...families].sort((a, b) => b[1] - a[1])[0];
+    addText(observation, 'p', session.competitors.length
+      ? `${session.competitors.length} ${session.competitors.length === 1 ? 'marca confirmada' : 'marcas confirmadas'} · ${session.mainColors.length} colores principales cromáticos confirmados. ${repeated ? `${repeated[0]} aparece en ${session.dominantFamily[1].brands.size} de ${session.competitors.length} marcas y acumula ${repeated[1]} muestras. Este recuento describe los códigos aportados, no su área visual.` : 'Las paletas principales son monocromáticas o insuficientes para resumir una familia cromática.'}`
+      : 'No hay marcas confirmadas en esta sesión.');
+    const provenance = { logo: 0, manual: 0, official: 0, campaign: 0 };
+    session.competitors.forEach((brand) => {
+      const list = brand.colors.map((color) => `${color.role} ${color.hex} (${color.source === 'logo' ? 'logotipo, estimación' : color.source === 'official' ? 'fuente indicada, no verificada' : color.source === 'manual' ? 'manual' : 'campaña'})`).join(' · ');
+      const familiesForBrand = [...new Set(brand.colors.filter((color) => color.role === 'Principal' && color.oklch.h !== null).map((color) => hueFamily(color.oklch)))];
+      addText(observation, 'p', `${brand.name}${familiesForBrand.length ? ` · ${familiesForBrand.join(' y ')}` : ' · paleta monocromática'}: ${list || 'sin colores estables'}`, 'report-brand-palette');
+      brand.colors.forEach((color) => { if (Object.hasOwn(provenance, color.source)) provenance[color.source] += 1; });
+    });
+    addText(observation, 'p', `Procedencia registrada: ${provenance.logo} estimaciones de logotipo, ${provenance.manual} introducidos manualmente y ${provenance.official} con fuente indicada por el usuario (no verificada). La muestra está limitada a las referencias confirmadas y no representa todo el mercado.`, 'report-caveat');
+
+    const implications = document.querySelector('[data-report-implications]'); implications.replaceChildren();
+    addText(implications, 'h4', 'B. Implicaciones para tu marca');
+    const values = session.values.length ? session.values.join(', ') : 'ningún valor seleccionado todavía';
+    addText(implications, 'p', `Para ${session.name}${session.sector ? `, en ${session.sector}` : ''} y su público ${session.audience || 'aún por definir'}, los valores declarados (${values}) son criterios para jerarquía, contraste y tono de aplicación; no se traducen a asociaciones cromáticas fijas. ${session.description || 'La oferta del proyecto está vacía; complétala para interpretar mejor el contexto.'}`);
+    addText(implications, 'p', session.dominantFamily
+      ? `${session.dominantFamily[0]} aparece en ${session.dominantFamily[1].brands.size} marcas de la muestra. Puede conservarse como anclaje o contrastarse con otra familia, pero su repetición no define por sí sola el posicionamiento. La siguiente decisión debe considerar las aplicaciones y la respuesta de ${session.audience || 'tu público objetivo'}.`
+      : 'La muestra es acromática o insuficiente para afirmar qué familia conviene conservar. No se inventa un color de oportunidad; define una referencia cromática y contrástala con el público y las aplicaciones de la marca.');
+
+    const directions = document.querySelector('[data-report-directions]'); directions.replaceChildren(); addText(directions, 'h4', 'C. Tres direcciones recomendadas');
+    latestTerritories.forEach((territory) => {
+      const block = document.createElement('div'); block.className = 'report-direction'; addText(block, 'h5', territory.title);
+      addText(block, 'p', territory.why);
+      const palette = document.createElement('div'); palette.className = 'report-direction-palette';
+      territory.palette.forEach((color) => { const item = document.createElement('div'); item.className = 'report-direction-color'; const swatch = document.createElement('span'); swatch.className = 'report-direction-swatch'; swatch.style.backgroundColor = color.hex; const label = document.createElement('span'); label.textContent = color.role; const hex = document.createElement('code'); hex.textContent = color.hex; item.append(swatch, label, hex); palette.append(item); });
+      block.append(palette);
+      addText(block, 'p', `Aplicación: ${territory.application} Validación: ${territory.validation}`); directions.append(block);
+    });
+
+    const steps = document.querySelector('[data-report-next-steps]'); steps.replaceChildren(); addText(steps, 'h4', 'D. Próximos pasos');
+    const list = document.createElement('ol');
+    latestTerritories.forEach((territory) => {
+      const colors = territory.palette.map((color) => `${color.role} ${color.hex}`).join(' + ');
+      addText(list, 'li', `${territory.title}: prueba ${colors || 'la combinación cuando confirmes una referencia cromática'} con texto y fondos claros y oscuros; revisa contraste, legibilidad y su aplicación a logotipo, pantalla móvil y pieza impresa.`);
+    });
+    addText(list, 'li', `Contrasta las tres rutas con ${session.audience || 'personas del público objetivo'} y registra qué comunica cada composición; valida reproducción y coherencia con ${session.sector || 'la categoría'} y con los valores elegidos.`);
+    steps.append(list);
+    const cover = document.querySelector('[data-report-brand]'); cover.textContent = ''; cover.append(document.createTextNode(`${session.name}\n`)); const emphasis = document.createElement('em'); emphasis.textContent = 'en contexto.'; cover.append(emphasis);
+  }
+
+  document.querySelector('[data-print-report]').addEventListener('click', () => window.print());
   attributeButtons.forEach((button) => {
     button.addEventListener('click', () => {
       const selected = attributeButtons.filter((item) => item.getAttribute('aria-pressed') === 'true');
@@ -623,7 +829,7 @@
 
       button.setAttribute('aria-pressed', String(!isSelected));
       const selectedCount = attributeButtons.filter((item) => item.getAttribute('aria-pressed') === 'true').length;
-      attributeFeedback.textContent = `${selectedCount} de 3 seleccionados · Selección de diseño, no se guarda.`;
+      attributeFeedback.textContent = `${selectedCount} de 3 seleccionados · Criterios declarados para orientar las propuestas.`;
     });
   });
   document.querySelector('[data-home]').addEventListener('click', (event) => {
