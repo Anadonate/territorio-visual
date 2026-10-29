@@ -11,6 +11,7 @@
   const attributeButtons = [...document.querySelectorAll('[data-attribute]')];
   const attributeFeedback = document.querySelector('[data-attribute-feedback]');
   const brandCards = [...document.querySelectorAll('[data-brand-card]')];
+  const stepNames = ['Contexto', 'Referencias', 'Mapa cromático', 'Territorios', 'Informe'];
   const brandData = new Map(brandCards.map((card) => [card.dataset.brandId, {
     name: '', url: '', image: null, previewUrl: '', fileName: '',
     includeBackground: false, background: null, colors: [], confirmed: false,
@@ -27,6 +28,16 @@
   }
 
   function showStep(step, moveFocus = true) {
+    if (step > 2 && ![...brandData.values()].some((brand) => brand.confirmed)) {
+      showStep(2, false);
+      const feedback = document.querySelector('[data-sample-feedback]');
+      feedback.hidden = false;
+      feedback.textContent = 'Antes de analizar, confirma al menos una paleta. Revisa el nombre, los códigos y la procedencia de sus colores.';
+      const cardWithColors = brandCards.find((card) => brandData.get(card.dataset.brandId).colors.length);
+      const focusTarget = cardWithColors ? cardWithColors.querySelector('[data-confirm-brand]') : brandCards[0].querySelector('[data-logo-file]');
+      focusTarget.focus({ preventScroll: true });
+      return;
+    }
     currentStep = Math.min(5, Math.max(1, step));
     welcome.hidden = true;
     experience.hidden = false;
@@ -50,6 +61,8 @@
     nextButton.innerHTML = currentStep === 5
       ? 'Volver al inicio <span aria-hidden="true">↗</span>'
       : 'Siguiente <span aria-hidden="true">→</span>';
+    backButton.textContent = currentStep === 1 ? 'Volver al inicio' : `Anterior · ${stepNames[currentStep - 2]}`;
+    backButton.setAttribute('aria-label', currentStep === 1 ? 'Volver al inicio' : `Volver a ${stepNames[currentStep - 2]}`);
     backButton.disabled = false;
 
     const title = screens[currentStep - 1].querySelector('h2');
@@ -84,8 +97,8 @@
   function sourceDescription(color, brand) {
     const source = color.source;
     if (source === 'logo') return color.wasEdited
-      ? `Ajuste manual a partir del logotipo ${brand.fileName} · extracción inicial OKLab · confianza: estimación visual, no oficial.`
-      : `Logotipo: ${brand.fileName} · extracción y agrupación OKLab · confianza: estimación del logotipo, no color oficial verificado.`;
+      ? `Ajuste manual del tono extraído · método inicial OKLab · confianza: estimación visual, no oficial.`
+      : `Logotipo aportado una vez · extracción y agrupación local OKLab · confianza: estimación visual, no color oficial verificado.`;
     if (source === 'manual') return `Fuente declarada por el usuario: ${color.sourceNote} · confianza: documento no verificado automáticamente.`;
     if (source === 'official') return `Activo oficial declarado: ${color.sourceNote} · confianza: fuente referida por el usuario, no contrastada por la aplicación.`;
     if (source === 'campaign') return `Campaña/temporada: ${color.sourceNote} · confianza: contexto declarado · fuera de la comparación estable.`;
@@ -103,10 +116,10 @@
     row.className = 'palette-row';
     row.dataset.colorId = color.id;
     const pickerLabel = document.createElement('label');
-    pickerLabel.className = 'visually-hidden';
-    pickerLabel.textContent = `Muestra de color ${index + 1}`;
+    pickerLabel.className = 'color-picker-label';
     const picker = document.createElement('input');
     picker.type = 'color'; picker.value = allowedHex.test(color.hex) ? color.hex : '#FFFFFF'; picker.setAttribute('data-color-picker', '');
+    picker.setAttribute('aria-label', `Editar muestra de color ${index + 1}`);
     pickerLabel.append(picker);
     const hexLabel = document.createElement('label');
     hexLabel.className = 'hex-field'; hexLabel.textContent = 'HEX';
@@ -129,6 +142,7 @@
     note.setAttribute('aria-label', `Detalle de la fuente del color ${index + 1}`);
     note.setAttribute('data-color-source-note', '');
     note.required = color.source !== 'logo';
+    note.hidden = color.source === 'logo';
     const remove = document.createElement('button');
     remove.className = 'remove-color'; remove.type = 'button'; remove.textContent = 'Quitar';
     remove.setAttribute('aria-label', `Eliminar el color ${color.hex}`); remove.setAttribute('data-remove-color', '');
@@ -159,7 +173,8 @@
     const selectedSource = row.querySelector('[data-color-source]').value;
     if (selectedSource !== color.source) {
       const note = row.querySelector('[data-color-source-note]');
-      note.value = selectedSource === 'logo' ? brand.fileName : '';
+      note.value = '';
+      note.hidden = selectedSource === 'logo';
     }
     color.hex = row.querySelector('[data-color-hex]').value.trim().toUpperCase();
     color.wasEdited = color.originalHex ? color.hex !== color.originalHex : true;
@@ -169,6 +184,7 @@
     row.querySelector('[data-color-picker]').value = allowedHex.test(color.hex) ? color.hex : '#FFFFFF';
     row.querySelector('[data-color-hex]').setAttribute('aria-invalid', String(!allowedHex.test(color.hex)));
     row.querySelector('[data-color-source-note]').required = color.source !== 'logo';
+    row.querySelector('[data-color-source-note]').hidden = color.source === 'logo';
     row.querySelector('[data-color-source-note]').placeholder = color.source === 'logo' ? 'Archivo de origen' : 'Indica fuente, página o campaña';
     row.querySelector('.color-provenance').textContent = sourceDescription(color, brand);
     markPaletteUnconfirmed(brand, card);
@@ -194,7 +210,7 @@
         brand.background = result.background;
         brand.colors = result.colors.map((item, index) => ({
           id: `${card.dataset.brandId}-logo-${Date.now()}-${index}`,
-          hex: item.hex, originalHex: item.hex, wasEdited: false, source: 'logo', sourceNote: brand.fileName,
+          hex: item.hex, originalHex: item.hex, wasEdited: false, source: 'logo', sourceNote: '',
           share: item.share, method: 'Extracción local y agrupación perceptual OKLab',
         }));
         backgroundControl.hidden = !result.background;
@@ -229,6 +245,8 @@
         const preview = card.querySelector('[data-logo-preview]');
         const image = document.createElement('img'); image.src = loaded.previewUrl; image.alt = `Vista previa del logotipo ${file.name}`;
         preview.replaceChildren(image); preview.classList.add('has-logo');
+        card.querySelector('.upload-copy strong').textContent = 'Cambiar logotipo';
+        card.querySelector('.upload-copy small').textContent = `1 archivo · ${file.name}`;
         await extractCurrentLogo();
       } catch (error) {
         status.textContent = error.message;
@@ -287,6 +305,9 @@
       });
       brand.confirmed = true;
       card.querySelector('[data-confirmation]').hidden = false;
+      const sampleFeedback = document.querySelector('[data-sample-feedback]');
+      sampleFeedback.hidden = true;
+      sampleFeedback.textContent = '';
       status.textContent = 'Colores confirmados por ti; la aplicación no ha verificado fuentes externas.';
       status.dataset.state = 'success';
     });
@@ -362,11 +383,12 @@
     const colorList = document.querySelector('[data-confirmed-list]');
     const neutralSection = document.querySelector('[data-neutral-section]');
     const neutralList = document.querySelector('[data-neutral-list]');
+    const neutralRamp = document.querySelector('[data-neutral-ramp]');
     const campaignSection = document.querySelector('[data-campaign-section]');
     const campaignList = document.querySelector('[data-campaign-list]');
     const comparisonList = document.querySelector('[data-comparison-list]');
     const emptyMap = document.querySelector('[data-map-empty]');
-    legend.replaceChildren(); colorList.replaceChildren(); neutralList.replaceChildren(); campaignList.replaceChildren(); comparisonList.replaceChildren();
+    legend.replaceChildren(); colorList.replaceChildren(); neutralList.replaceChildren(); neutralRamp.replaceChildren(); campaignList.replaceChildren(); comparisonList.replaceChildren();
     emptyMap.hidden = stable.length > 0;
     emptyMap.textContent = neutral.length || campaign.length
       ? 'La muestra confirmada contiene neutros o colores estacionales, pero ningún tono cromático para ubicar.'
@@ -394,8 +416,7 @@
 
     stable.forEach((datum) => {
       const { oklch } = datum;
-      const chromaMax = 0.36;
-      const radius = Math.min(1, oklch.C / chromaMax) * 142;
+      const radius = (1 - oklch.L) * 190;
       const angle = (oklch.h - 90) * Math.PI / 180;
       const cx = 200 + Math.cos(angle) * radius;
       const cy = 200 + Math.sin(angle) * radius;
@@ -410,6 +431,21 @@
     });
 
     neutralSection.hidden = neutral.length === 0;
+    if (neutral.length) {
+      const track = document.createElement('div'); track.className = 'neutral-track';
+      neutral.forEach((datum) => {
+        const marker = document.createElement('span'); marker.className = 'neutral-marker';
+        marker.style.left = `${(1 - datum.oklch.L) * 100}%`;
+        marker.style.backgroundColor = datum.hex;
+        marker.setAttribute('role', 'img');
+        marker.setAttribute('aria-label', `${datum.brand.name}, ${datum.hex}, ${formatOklch(datum.oklch)}`);
+        const title = document.createElement('span'); title.textContent = `${datum.brand.name} · ${datum.hex}`;
+        marker.append(title); track.append(marker);
+      });
+      const whiteLabel = document.createElement('span'); whiteLabel.className = 'neutral-ramp-white'; whiteLabel.textContent = 'L 100 · BLANCO';
+      const blackLabel = document.createElement('span'); blackLabel.className = 'neutral-ramp-black'; blackLabel.textContent = 'L 0 · NEGRO';
+      neutralRamp.append(track, whiteLabel, blackLabel);
+    }
     neutral.forEach((datum, index) => renderColorEntry(neutralList, datum, datum.brand, index));
     campaignSection.hidden = campaign.length === 0;
     campaign.forEach((datum, index) => renderColorEntry(campaignList, datum, datum.brand, index));
