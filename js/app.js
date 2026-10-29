@@ -10,6 +10,7 @@
   const backButton = document.querySelector('[data-back]');
   const attributeButtons = [...document.querySelectorAll('[data-attribute]')];
   const attributeFeedback = document.querySelector('[data-attribute-feedback]');
+  const referenceForms = [...document.querySelectorAll('[data-reference-form]')];
   let currentStep = 1;
 
   function showWelcome() {
@@ -65,6 +66,46 @@
   });
   stepLinks.forEach((link) => {
     link.addEventListener('click', () => showStep(Number(link.dataset.goStep)));
+  });
+  referenceForms.forEach((form) => {
+    const urlInput = form.querySelector('input[type="url"]');
+    const status = form.querySelector('[data-reference-status]');
+    const link = form.querySelector('[data-reference-link]');
+
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const rawValue = urlInput.value.trim();
+      const candidate = /^[a-z][a-z\d+.-]*:\/\//i.test(rawValue) ? rawValue : `https://${rawValue}`;
+      let parsed;
+
+      try {
+        parsed = new URL(candidate);
+      } catch {
+        parsed = null;
+      }
+
+      if (!parsed || !['http:', 'https:'].includes(parsed.protocol) || !parsed.hostname.includes('.')) {
+        urlInput.setAttribute('aria-invalid', 'true');
+        status.textContent = 'Introduce una dirección web válida, por ejemplo marca.com.';
+        status.dataset.state = 'error';
+        link.hidden = true;
+        return;
+      }
+
+      urlInput.removeAttribute('aria-invalid');
+      urlInput.value = parsed.href;
+      link.href = parsed.href;
+      link.hidden = false;
+      status.textContent = 'Enlace añadido a esta vista. No leeremos su contenido.';
+      status.dataset.state = 'success';
+    });
+
+    urlInput.addEventListener('input', () => {
+      urlInput.removeAttribute('aria-invalid');
+      status.textContent = 'Opcional · la web no se analizará automáticamente.';
+      status.dataset.state = '';
+      link.hidden = true;
+    });
   });
   attributeButtons.forEach((button) => {
     button.addEventListener('click', () => {
