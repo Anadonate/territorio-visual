@@ -1,175 +1,57 @@
 (() => {
-  const entries = [...document.querySelectorAll('[data-entry]')];
-  const brandEntry = entries.find((entry) => entry.dataset.entry === 'brand');
-  const competitorEntries = entries.filter((entry) => entry.dataset.entry === 'competitor');
-  const results = document.querySelector('[data-results]');
-  const globalStatus = document.querySelector('[data-global-status]');
-  const hexPattern = /^#[0-9a-f]{6}$/i;
-
-  function setStatus(entry, message, error = false) {
-    const status = entry.querySelector('[data-status]');
-    status.textContent = message;
-    status.classList.toggle('is-error', error);
-  }
-  function setColor(entry, hex, message) {
-    entry.querySelector('[data-color-control]').hidden = false;
-    entry.querySelector('[data-picker]').value = hex;
-    entry.querySelector('[data-hex]').value = hex.toUpperCase();
-    entry.dataset.color = hex.toUpperCase();
-    setStatus(entry, message || 'Revisa que esta muestra represente el color principal de la marca.');
-  }
-  entries.forEach((entry) => {
-    const fileInput = entry.querySelector('[data-file]');
-    const nameInput = entry.querySelector('[data-name]');
-    const preview = entry.querySelector('[data-preview]');
-    const uploadTitle = entry.querySelector('[data-upload-title]');
-    const picker = entry.querySelector('[data-picker]');
-    const hexInput = entry.querySelector('[data-hex]');
-    let previewUrl = null;
-    let loadToken = 0;
-    fileInput.addEventListener('change', async () => {
-      const file = fileInput.files && fileInput.files[0];
-      if (!file) return;
-      const token = ++loadToken;
-      uploadTitle.textContent = 'Analizando logotipo…';
-      setStatus(entry, 'Buscando el color con más presencia en la imagen.');
-      try {
-        const loaded = await window.TerritorioColor.loadLogo(file);
-        if (token !== loadToken) { URL.revokeObjectURL(loaded.previewUrl); return; }
-        const extracted = window.TerritorioColor.extractColors(loaded.image);
-        if (previewUrl) URL.revokeObjectURL(previewUrl);
-        previewUrl = loaded.previewUrl;
-        preview.replaceChildren();
-        const image = document.createElement('img');
-        image.src = previewUrl;
-        image.alt = 'Vista previa del logotipo subido';
-        preview.append(image);
-        uploadTitle.textContent = file.name;
-        setColor(entry, extracted.colors[0].hex, 'Color dominante estimado. Comprueba que corresponda al color principal y no al fondo.');
-      } catch (error) {
-        if (token !== loadToken) return;
-        uploadTitle.textContent = 'No se pudo leer el archivo';
-        setStatus(entry, error.message || 'Prueba con un PNG o JPEG.', true);
-      }
-    });
-    picker.addEventListener('input', () => {
-      hexInput.value = picker.value.toUpperCase();
-      entry.dataset.color = picker.value.toUpperCase();
-      setStatus(entry, 'Color ajustado por ti. Se usará esta muestra en la comparación.');
-    });
-    hexInput.addEventListener('change', () => {
-      const value = hexInput.value.trim();
-      if (!hexPattern.test(value)) {
-        hexInput.setAttribute('aria-invalid', 'true');
-        setStatus(entry, 'Introduce un código HEX válido, por ejemplo #EA5A77.', true);
-        return;
-      }
-      hexInput.removeAttribute('aria-invalid');
-      setColor(entry, value.toUpperCase(), 'Color ajustado por ti. Se usará esta muestra en la comparación.');
-    });
-    nameInput.addEventListener('input', () => { entry.dataset.brandName = nameInput.value.trim(); });
-  });
-
-  function nameFor(entry, fallback) { return entry.querySelector('[data-name]').value.trim() || fallback; }
-  function colorFamily(hex) {
-    const color = window.TerritorioColor.toOklch(hex);
-    if (color.h === null || color.C < 0.035) {
-      if (color.L < 0.23) return 'negro';
-      if (color.L > 0.91) return 'blanco';
-      return 'neutro';
-    }
-    const h = color.h;
-    if (h < 18 || h >= 345) return 'rojo y rosa';
-    if (h < 45) return 'naranja';
-    if (h < 68) return 'amarillo';
-    if (h < 160) return 'verde';
-    if (h < 205) return 'turquesa';
-    if (h < 255) return 'azul';
-    if (h < 290) return 'violeta';
-    if (h < 325) return 'magenta';
-    return 'rojo y rosa';
-  }
-  function colorLabel(hex) {
-    const family = colorFamily(hex);
-    const labels = {'rojo y rosa':'rojos y rosas',naranja:'naranjas',amarillo:'amarillos',verde:'verdes',turquesa:'turquesas',azul:'azules',violeta:'violetas',magenta:'magenta',negro:'negros',blanco:'blancos',neutro:'tonos neutros'};
-    return labels[family] || family;
-  }
-  function readableText(hex) {
-    const value = hex.slice(1);
-    const channels = [0,2,4].map((i) => parseInt(value.slice(i,i+2),16)/255).map((v) => v <= .04045 ? v/12.92 : ((v+.055)/1.055)**2.4);
-    return .2126*channels[0]+.7152*channels[1]+.0722*channels[2] > .48 ? '#292729' : '#FFFFFF';
-  }
-  function buildBoard(all) {
-    const board = document.querySelector('[data-board]');
-    board.replaceChildren();
-    all.forEach((item, index) => {
-      const card = document.createElement('article');
-      card.className = index === 0 ? 'comparison-item comparison-own' : 'comparison-item';
-      const swatch = document.createElement('div');
-      swatch.className = 'comparison-swatch';
-      swatch.style.backgroundColor = item.hex;
-      swatch.style.color = readableText(item.hex);
-      const tag = document.createElement('span');
-      tag.textContent = index === 0 ? 'TU MARCA' : 'REFERENCIA';
-      const hex = document.createElement('strong');
-      hex.textContent = item.hex;
-      swatch.append(tag, hex);
-      const name = document.createElement('h3');
-      name.textContent = item.name;
-      const family = document.createElement('p');
-      family.textContent = colorLabel(item.hex);
-      card.append(swatch, name, family);
-      board.append(card);
-    });
-  }
-  function renderResults() {
-    const own = {name:nameFor(brandEntry,'Tu marca'),hex:brandEntry.dataset.color};
-    const competitors = competitorEntries.filter((entry) => hexPattern.test(entry.dataset.color || '')).map((entry,index) => ({name:nameFor(entry,'Marca '+(index+1)),hex:entry.dataset.color}));
-    const families = competitors.map((item) => colorFamily(item.hex));
-    const ownFamily = colorFamily(own.hex);
-    const sameFamily = competitors.filter((item) => colorFamily(item.hex) === ownFamily);
-    buildBoard([own,...competitors]);
-    const observation = document.querySelector('[data-observation]');
-    const observationTitle = document.querySelector('[data-observation-title]');
-    const interpretation = document.querySelector('[data-interpretation]');
-    const recommendation = document.querySelector('[data-recommendation]');
-    const familyName = colorLabel(own.hex);
-    observationTitle.textContent = 'Tu color principal está en la familia de '+familyName+'.';
-    if (sameFamily.length === competitors.length) {
-      observation.textContent = (competitors.length === 1 ? 'La marca de referencia también utiliza' : 'Todas las marcas de referencia utilizan')+' un color de la familia de '+familyName+'. Es una coincidencia de familia cromática; no significa que los tonos sean idénticos.';
-      interpretation.textContent = 'Compartir una familia de color puede hacer que varias marcas se perciban como parte de un mismo universo visual. La diferencia también depende de la forma del logotipo, la tipografía, el tono exacto y cómo se aplica el color.';
-      recommendation.textContent = 'Antes de cambiar de familia, prueba a ajustar el tono, la luminosidad o la proporción de color y revisa el resultado junto a los logotipos de tu categoría. Si buscas una diferencia más visible, compara también una ruta cromática alternativa con tu público.';
-    } else if (sameFamily.length > 0) {
-      observation.textContent = sameFamily.map((item) => item.name).join(', ')+' comparte'+(sameFamily.length > 1 ? 'n' : '')+' contigo la familia de '+familyName+'. '+(competitors.length-sameFamily.length)+' '+(competitors.length-sameFamily.length === 1 ? 'marca utiliza' : 'marcas utilizan')+' otra familia cromática en esta muestra.';
-      interpretation.textContent = 'Tu color aparece en una parte del paisaje visual observado, pero no en todas las referencias. Esto puede ofrecer un punto de familiaridad y, a la vez, margen para diferenciar el tono o el sistema visual.';
-      recommendation.textContent = 'Decide si quieres reforzar los códigos reconocibles de la categoría o separarte de ellos. Compara variaciones de tu color principal y pruébalas en el logotipo, la web y los materiales reales antes de decidir.';
-    } else {
-      observation.textContent = 'Ninguna de las '+competitors.length+' marcas que has añadido está clasificada en la misma familia cromática que tu color principal. Dentro de esta pequeña muestra, tu color tiene una familia distinta.';
-      interpretation.textContent = 'La diferencia puede ayudar a que la identidad destaque visualmente en este conjunto, pero no demuestra que exista una oportunidad de mercado ni que el público vaya a recordarla mejor.';
-      recommendation.textContent = 'Comprueba que el color encaje con la personalidad, el público y el contexto de tu marca. Prueba el logotipo junto a referencias reales y valida si la diferencia se entiende como intencionada, no como una elección desconectada de la categoría.';
-    }
-    if (new Set(families).size === 1 && competitors.length > 1) observation.textContent += ' Además, las referencias se concentran en una sola familia cromática.';
-    else if (new Set(families).size === competitors.length && competitors.length > 1) observation.textContent += ' Las referencias se reparten entre distintas familias cromáticas.';
-    results.hidden = false;
-    globalStatus.textContent = 'Comparación preparada: tu marca y '+competitors.length+' '+(competitors.length === 1 ? 'referencia' : 'referencias')+'.';
-    results.scrollIntoView({behavior:'smooth',block:'start'});
-  }
-  document.querySelector('[data-analyze]').addEventListener('click', () => {
-    if (!hexPattern.test(brandEntry.dataset.color || '')) {
-      globalStatus.textContent = 'Primero sube el logotipo de tu marca y revisa su color principal.';
-      brandEntry.scrollIntoView({behavior:'smooth',block:'center'});
-      brandEntry.querySelector('[data-file]').focus();
-      return;
-    }
-    const competitors = competitorEntries.filter((entry) => hexPattern.test(entry.dataset.color || ''));
-    if (!competitors.length) {
-      globalStatus.textContent = 'Añade al menos un logotipo de referencia para poder comparar colores.';
-      competitorEntries[0].scrollIntoView({behavior:'smooth',block:'center'});
-      competitorEntries[0].querySelector('[data-file]').focus();
-      return;
-    }
-    renderResults();
-  });
-  document.querySelector('[data-edit]').addEventListener('click', () => document.querySelector('#comparar').scrollIntoView({behavior:'smooth'}));
-  document.querySelector('[data-print]').addEventListener('click', () => window.print());
+const entries=[...document.querySelectorAll('[data-entry="competitor"]')];
+const results=document.querySelector('[data-results]');
+const status=document.querySelector('[data-global-status]');
+const hexPattern=/^#[0-9a-f]{6}$/i;
+const form=document.querySelector('[data-brief]');
+const $=(s)=>document.querySelector(s);
+function setStatus(entry,msg,error=false){const el=entry.querySelector('[data-status]');el.textContent=msg;el.classList.toggle('is-error',error)}
+function setColor(entry,hex,msg){entry.querySelector('[data-color-control]').hidden=false;entry.querySelector('[data-picker]').value=hex;entry.querySelector('[data-hex]').value=hex.toUpperCase();entry.dataset.color=hex.toUpperCase();setStatus(entry,msg||'Color estimado. Comprueba que representa el color principal de esta identidad.')}
+entries.forEach(entry=>{
+ const file=entry.querySelector('[data-file]'),name=entry.querySelector('[data-name]'),preview=entry.querySelector('[data-preview]'),title=entry.querySelector('[data-upload-title]'),picker=entry.querySelector('[data-picker]'),hex=entry.querySelector('[data-hex]');let url=null,token=0;
+ file.addEventListener('change',async()=>{const f=file.files&&file.files[0];if(!f)return;const t=++token;title.textContent='Analizando…';setStatus(entry,'Estimando el color con más presencia.');
+ try{const loaded=await window.TerritorioColor.loadLogo(f);if(t!==token){URL.revokeObjectURL(loaded.previewUrl);return}const extracted=window.TerritorioColor.extractColors(loaded.image);if(url)URL.revokeObjectURL(url);url=loaded.previewUrl;preview.replaceChildren();const img=document.createElement('img');img.src=url;img.alt='Vista previa del logotipo';preview.append(img);title.textContent=f.name;setColor(entry,extracted.colors[0].hex,'Color dominante estimado. Revísalo: puede corresponder al fondo o a un detalle del logo.')}catch(e){title.textContent='No se pudo leer el archivo';setStatus(entry,e.message||'Prueba con un PNG o JPEG.',true)}});
+ picker.addEventListener('input',()=>{hex.value=picker.value.toUpperCase();entry.dataset.color=picker.value.toUpperCase();setStatus(entry,'Color corregido manualmente.')});
+ hex.addEventListener('change',()=>{const v=hex.value.trim();if(!hexPattern.test(v)){hex.setAttribute('aria-invalid','true');setStatus(entry,'Introduce un HEX válido, por ejemplo #EA5A77.',true);return}hex.removeAttribute('aria-invalid');setColor(entry,v,'Color corregido manualmente.')});
+});
+function family(hex){const c=window.TerritorioColor.toOklch(hex);if(c.h===null||c.C<.035)return c.L<.23?'negro':c.L>.91?'blanco':'neutro';const h=c.h;if(h<18||h>=345)return'rojo/rosa';if(h<45)return'naranja';if(h<68)return'amarillo';if(h<160)return'verde';if(h<205)return'turquesa';if(h<255)return'azul';if(h<290)return'violeta';if(h<325)return'magenta';return'rojo/rosa'}
+function familyLabel(f){return({'rojo/rosa':'rojos y rosas',naranja:'naranjas',amarillo:'amarillos',verde:'verdes',turquesa:'turquesas',azul:'azules',violeta:'violetas',magenta:'magenta',negro:'negros',blanco:'blancos',neutro:'neutros'})[f]||f}
+function rgbToHex(r,g,b){return'#'+[r,g,b].map(x=>Math.round(x).toString(16).padStart(2,'0')).join('').toUpperCase()}
+function hsl(h,s,l){h=((h%360)+360)%360;s/=100;l/=100;const a=s*Math.min(l,1-l),f=n=>{const k=(n+h/30)%12;return l-a*Math.max(-1,Math.min(k-3,9-k,1))};return rgbToHex(f(0)*255,f(8)*255,f(4)*255)}
+function hue(hex){const c=window.TerritorioColor.toOklch(hex);return c.h===null?210:c.h}
+function esc(text){return String(text).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function palette(base,offsets){return offsets.map((o,i)=>hsl(base+o,[64,48,35][i]||45,[43,59,76][i]||55))}
+function renderBoard(items){const board=$('[data-board]');board.replaceChildren();items.forEach(item=>{const card=document.createElement('article');card.className='comparison-item';const sw=document.createElement('div');sw.className='comparison-swatch';sw.style.background=item.hex;sw.style.color=(()=>{const c=window.TerritorioColor.toOklch(item.hex);return c.L>.65?'#292729':'#fff'})();const tag=document.createElement('span');tag.textContent='REFERENCIA';const val=document.createElement('strong');val.textContent=item.hex;sw.append(tag,val);const n=document.createElement('h4');n.textContent=item.name;const f=document.createElement('p');f.textContent=familyLabel(family(item.hex));card.append(sw,n,f);board.append(card)})}
+function analyze(){
+ if(!form.reportValidity()){form.reportValidity();$('#briefing').scrollIntoView({behavior:'smooth'});return}
+ const competitors=entries.filter(e=>hexPattern.test(e.dataset.color||'')).map((e,i)=>({name:e.querySelector('[data-name]').value.trim()||'Marca '+(i+1),hex:e.dataset.color}));
+ if(competitors.length<2){status.textContent='Añade al menos dos logotipos de competencia para detectar patrones con algo más de contexto.';$('#competencia').scrollIntoView({behavior:'smooth'});return}
+ const data=Object.fromEntries(new FormData(form).entries());const fams=competitors.map(x=>family(x.hex));const counts={};fams.forEach(f=>counts[f]=(counts[f]||0)+1);const dominant=Object.entries(counts).sort((a,b)=>b[1]-a[1])[0];const concentrated=dominant[1]>=Math.ceil(competitors.length*.5);const usedHue=competitors.reduce((a,x)=>a+hue(x.hex),0)/competitors.length;
+ const observed=Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(([f,n])=>familyLabel(f)+' ('+n+')').join(', ');
+ $('[data-result-brand]').textContent=data.brandName;
+ $('[data-result-intro]').textContent='Propuestas iniciales para '+data.brandName+', teniendo en cuenta su sector ('+data.sector+'), el público al que se dirige y la personalidad que quiere construir.';
+ $('[data-observation]').textContent='En los '+competitors.length+' logotipos aportados aparecen estas familias cromáticas: '+observed+'. '+(concentrated?'La muestra muestra una concentración relativa en '+familyLabel(dominant[0])+'.':'La muestra está repartida entre varias familias, sin una única familia claramente dominante.')+' Esto describe únicamente las referencias seleccionadas, no todo el sector.';
+ $('[data-interpretation]').textContent='La concentración puede reflejar códigos compartidos, convenciones o posicionamientos habituales, pero el color por sí solo no permite saber por qué cada empresa lo eligió. Para '+data.brandName+', la decisión debe cruzar ese contexto con sus valores ('+data.values+') y con la imagen deseada: '+data.personality+'.';
+ renderBoard(competitors);
+ const values=(data.values+' '+data.personality+' '+data.description).toLowerCase();
+ const keywords=[['confianza|seguridad|profesional|experiencia|rigor',215,'Confianza contemporánea'],['natural|sostenib|ecológ|orgán|bienestar|salud',145,'Cercanía natural'],['innov|tecnolog|digital|futur|disrupt|creativ',265,'Innovación expresiva'],['premium|lujo|exclusiv|sofistic|elegan',35,'Sofisticación cálida'],['cercan|amable|accesib|familiar|divertid',345,'Cercanía con carácter']];
+ let chosen=keywords.find(k=>new RegExp(k[0]).test(values));let anchor=chosen?chosen[1]:195;
+ const baseHue=concentrated?((hue(competitors.find(x=>family(x.hex)===dominant[0]).hex)+360)%360):usedHue;
+ const avoidHue=concentrated?baseHue:usedHue;
+ const routes=[
+ {name:'Afinidad estratégica',tag:'Hablar el lenguaje del sector',h:anchor,desc:'Una ruta que conserva señales cromáticas reconocibles para el mercado, pero permite construir una ejecución propia mediante matiz, luminosidad y combinación.',reason:'Puede ser adecuada si la prioridad es transmitir '+(data.values.split(',')[0]||'confianza')+' y facilitar que el público entienda rápidamente la categoría.'},
+ {name:'Diferenciación matizada',tag:'Separarse sin romper el código',h:(avoidHue+48)%360,desc:'Una variación de matiz respecto a la zona cromática más presente en la muestra. La diferenciación no depende de un opuesto automático: se busca una distancia visible pero compatible con la personalidad definida.',reason:'Puede ayudar a crear reconocimiento propio manteniendo una relación visual comprensible con el sector.'},
+ {name:'Territorio alternativo',tag:'Una personalidad más singular',h:(anchor+118)%360,desc:'Una ruta más exploratoria que amplía la distancia cromática. Solo tiene sentido si la personalidad, la propuesta de valor y las expectativas del público justifican apartarse de los códigos habituales.',reason:'No se propone por contraste decorativo: sería una opción si '+data.brandName+' necesita expresar una posición claramente distinta y puede sostenerla en todos sus puntos de contacto.'}
+ ];
+ if(chosen&&chosen[2]==='Cercanía natural')routes[0].h=145;
+ if(chosen&&chosen[2]==='Innovación expresiva')routes[0].h=265;
+ const routesEl=$('[data-routes]');routesEl.innerHTML='';
+ routes.forEach((r,i)=>{const colors=palette(r.h,[0,18,-16]);const card=document.createElement('article');card.className='route-card';const sw=document.createElement('div');sw.className='route-swatches';colors.forEach((c,j)=>{const s=document.createElement('span');s.style.background=c;s.innerHTML='<b>'+['Principal','Secundario','Apoyo'][j]+'</b><small>'+c+'</small>';sw.append(s)});const top=document.createElement('p');top.className='route-tag';top.textContent='RUTA 0'+(i+1)+' · '+r.tag;const title=document.createElement('h3');title.textContent=r.name;const desc=document.createElement('p');desc.textContent=r.desc;const reason=document.createElement('p');reason.className='route-reason';reason.textContent=r.reason;card.append(top,title,sw,desc,reason);routesEl.append(card)});
+ $('[data-recommendation-title]').textContent=concentrated?'Explorar una diferencia de matiz antes de romper con el código del sector.':'Elegir entre afinidad y diferenciación según la personalidad prioritaria.';
+ $('[data-recommendation]').textContent='Como primer territorio de trabajo, compara la ruta 02 con la ruta 01 en aplicaciones reales. '+(concentrated?'La concentración cromática observada sugiere que merece la pena probar una variación propia dentro de una lógica reconocible. ':'La diversidad de la muestra permite explorar distintas familias, pero conviene elegir según el posicionamiento y no solo por ser diferente. ')+'Contrasta las opciones con el público objetivo y revisa legibilidad, accesibilidad, reproducción y convivencia con fotografía e ilustración. La selección de matiz es una hipótesis inicial, no una conclusión estadística.';
+ results.hidden=false;status.textContent='Análisis preparado con '+competitors.length+' referencias.';results.scrollIntoView({behavior:'smooth',block:'start'});
+}
+$('[data-analyze]').addEventListener('click',analyze);
+$('[data-print]').addEventListener('click',()=>window.print());
+$('[data-edit]').addEventListener('click',()=>$('#briefing').scrollIntoView({behavior:'smooth'}));
 })();
