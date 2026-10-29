@@ -198,15 +198,16 @@
     }
 
     const selected = usableClusters
-      .filter((cluster) => cluster.count / foregroundPixels >= 0.008)
+      .filter((cluster) => cluster.count / foregroundPixels >= 0.02)
       .sort((a, b) => b.count - a.count)
-      .slice(0, 6)
+      .slice(0, 4)
       .map((cluster) => {
         const hex = rgbToHex(cluster.r / cluster.count, cluster.g / cluster.count, cluster.b / cluster.count);
         return { hex, share: cluster.count / foregroundPixels, oklch: toOklch(hex) };
       });
-    if (!selected.length) throw new Error('No se detectaron tonos con suficiente presencia. Añade los colores manualmente.');
-    return { colors: selected, background: background ? rgbToHex(background.r, background.g, background.b) : null, foregroundPixels };
+    const uniqueColors = [...new Map(selected.map((color) => [color.hex, color])).values()];
+    if (!uniqueColors.length) throw new Error('No se detectaron tonos con suficiente presencia. Añade los colores manualmente.');
+    return { colors: uniqueColors, background: background ? rgbToHex(background.r, background.g, background.b) : null, foregroundPixels };
   }
 
   window.TerritorioColor = Object.freeze({ loadLogo, extractColors, toOklch, deltaEOK, rgbToHex });
