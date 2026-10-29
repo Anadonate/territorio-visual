@@ -81,6 +81,30 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .site-footer i { margin-left: 8px; color: var(--pink); font-size: 12px; font-style: normal; }
 .footer-signature { display: inline-flex; align-items: center; gap: 10px; }
 .footer-signature img { width: 68px; height: 18px; object-fit: contain; }
+.competitor-placeholder { min-height: 74px; padding: 12px; grid-template-rows: auto auto; gap: 3px; text-align: center; font-family: var(--sans); }
+.competitor-placeholder strong { color: #a39a8f; font-family: var(--serif); font-size: 25px; font-weight: 400; line-height: 1; }
+.competitor-placeholder span { color: #8e877f; font-size: 8px; font-weight: 700; letter-spacing: .12em; }
+.reference-field { display: block; margin-top: 12px; color: var(--ink); font-size: 11px; font-weight: 700; }
+.reference-field input { width: 100%; min-width: 0; min-height: 40px; margin-top: 6px; padding: 9px 11px; border: 1px solid #dcd5cc; border-radius: 8px; background: #fff; color: var(--ink); font: inherit; font-size: 12px; }
+.reference-field input:focus-visible { outline: 3px solid color-mix(in srgb, var(--green) 55%, transparent); outline-offset: 2px; border-color: var(--green); }
+.reference-field input[aria-invalid="true"] { border-color: #a54039; }
+.reference-control { display: flex; align-items: stretch; gap: 7px; }
+.reference-control input { flex: 1; }
+.reference-control button { flex: 0 0 auto; min-height: 40px; margin-top: 6px; padding: 0 11px; border: 0; border-radius: 999px; background: var(--ink); color: #fff; font: inherit; font-size: 10px; font-weight: 700; cursor: pointer; }
+.reference-control button:hover { background: var(--green); }
+.reference-control button:focus-visible, .reference-link:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+.reference-status { min-height: 30px; margin: 7px 0 0; color: var(--muted); font-size: 10px; line-height: 1.45; }
+.reference-status[data-state="error"] { color: #9b3b35; }
+.reference-status[data-state="success"] { color: #35604f; }
+.reference-link { display: inline-block; margin: 0 0 4px; color: var(--green); font-size: 11px; font-weight: 700; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.swatch-placeholder { margin-top: 8px; }
+@media (max-width: 700px) {
+  .competitor-card { display: block; }
+  .competitor-placeholder { min-height: 54px; height: auto; margin-bottom: 11px; }
+  .competitor-card .eyebrow { margin: 4px 0 8px; }
+  .reference-field { margin-top: 9px; }
+  .reference-status { min-height: 0; }
+}
 
 .experience { min-height: calc(100vh - 143px); max-width: 1440px; margin: 0 auto; padding: 38px clamp(28px, 6vw, 88px) 42px; display: grid; grid-template-columns: 208px minmax(0, 1fr); gap: clamp(40px, 7vw, 102px); }
 .experience[hidden] { display: none; }
