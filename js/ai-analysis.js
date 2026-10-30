@@ -112,10 +112,10 @@ function render(analysis, briefing, competitorCount, colorCount) {
   const tensionHost = $('[data-ai-tensions]');
   tensionHost.replaceChildren();
   listInto(tensionHost, analysis.brand_fit.tensions);
-  const implications = el('div', 'ai-implications');
-  implications.append(el('h4', '', 'Implicaciones cromáticas'));
+  let implications = fitPanel.querySelector('.ai-implications');
+  if (!implications) { implications = el('div', 'ai-implications'); fitPanel.append(implications); }
+  implications.replaceChildren(el('h4', '', 'Implicaciones cromáticas'));
   listInto(implications, analysis.brand_fit.chromatic_implications);
-  fitPanel.append(implications);
   results.hidden = false;
   status.textContent = 'Diagnóstico estratégico generado con IA. Revisa las hipótesis y valida las propuestas antes de tomar decisiones.';
   results.scrollIntoView({ behavior: 'smooth', block: 'start' });
