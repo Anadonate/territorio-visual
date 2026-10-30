@@ -46,3 +46,37 @@
 @media(max-width:850px){.competitor-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.routes-grid{grid-template-columns:1fr}.route-card{display:grid;grid-template-columns:1fr 1fr;column-gap:22px}.route-card .route-tag,.route-card h3{grid-column:1/-1}.route-swatches{grid-row:3/5;grid-column:1}.route-card>p:not(.route-tag){grid-column:2}.route-card .route-reason{grid-column:2}}
 @media(max-width:600px){.brief-form{padding:19px}.form-grid{grid-template-columns:1fr;gap:18px}.field-wide{grid-column:auto}.field input,.field textarea{font-size:16px}.brief-footer{align-items:stretch;flex-direction:column;gap:17px}.brief-footer .button{width:100%}.competitor-grid{grid-template-columns:1fr}.analysis-summary{grid-template-columns:1fr}.market-board .comparison-board{grid-template-columns:repeat(2,minmax(0,1fr))}.routes-heading{margin-top:46px}.routes-heading h2{font-size:42px}.route-card{display:block;padding:19px}.route-swatches span{min-height:105px}.route-card>p:not(.route-tag){font-size:15px}.route-card .route-reason{margin-top:14px}.final-recommendation h3{font-size:26px}}
 @media print{.site-header,.hero,.tool-section,.site-footer,.result-actions{display:none!important}.results-section{display:block!important;padding:0;border:0}.analysis-summary,.routes-grid{break-inside:avoid}.routes-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.route-card{display:block;padding:10px}.route-card h3{font-size:18px}.route-card>p:not(.route-tag){font-size:10px}.route-swatches span{min-height:80px}.market-board .comparison-board{grid-template-columns:repeat(3,minmax(0,1fr))}.comparison-item .comparison-swatch{min-height:85px}.final-recommendation{break-inside:avoid}}
+
+
+/* Ajustes de análisis cromático dual y territorios abiertos */
+.dual-color-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.dual-color{min-width:0;padding:14px;background:#f8f5ef;border:1px solid var(--line);border-radius:11px}
+.dual-color>label{display:block;font-size:13px;font-weight:800;line-height:1.45}
+.dual-color>label span{display:block;margin-top:3px;font-size:11px;font-weight:500;color:var(--muted)}
+.dual-color .color-edit{display:grid;grid-template-columns:20px 48px minmax(0,1fr);gap:8px;align-items:center;margin-top:10px}
+.dual-color .color-edit input[type=checkbox]{width:17px;height:17px;accent-color:var(--green);cursor:pointer}
+.dual-color .color-edit input[type=color]{width:48px;height:44px;min-width:0;padding:3px}
+.dual-color .color-edit input[type=text]{min-height:44px;padding:9px;font-size:14px}
+.dual-color>small{display:block;margin-top:8px;color:var(--muted);font-size:11px;line-height:1.45}
+.wheel-layout{display:grid;grid-template-columns:minmax(280px,1.05fr) minmax(250px,.95fr);gap:30px;align-items:center}
+.chromatic-wheel{display:block;width:100%;max-width:480px;height:auto;margin:0 auto}
+.wheel-legend{display:grid;gap:12px}
+.wheel-legend-row{display:grid;grid-template-columns:34px 1fr;gap:12px;align-items:start;padding:14px 0;border-bottom:1px solid var(--line)}
+.legend-index{font:normal 18px var(--serif);color:var(--pink)}
+.wheel-legend-row strong{display:block;font-size:15px;margin-bottom:8px}
+.legend-swatches{display:flex;flex-wrap:wrap;gap:6px}
+.legend-swatches span{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)}
+.legend-swatches span:before{content:"";width:12px;height:12px;border-radius:50%;background:var(--swatch);border:1px solid #29272920}
+.wheel-caption{max-width:850px;margin:20px 0 0;color:var(--muted);font-size:12px;line-height:1.6}
+.territory-exploration{display:grid;grid-template-columns:minmax(260px,.8fr) minmax(0,1.2fr);gap:32px;align-items:center}
+.territory-wheel{max-width:430px}
+.territory-cards{display:grid;gap:12px}
+.territory-card{position:relative;padding:20px 22px 20px 26px;background:var(--white);border:1px solid var(--line);border-radius:14px}
+.territory-card h3{font:normal 23px/1.15 var(--serif);margin:0 0 12px}
+.territory-card>p:not(.route-tag){font-size:14px;line-height:1.6;color:#5c5551;margin:9px 0 0}
+.territory-card .route-tag{font-size:10px;font-weight:850;letter-spacing:.1em;color:var(--pink);margin:0 0 8px}
+.territory-marker{position:absolute;right:20px;top:20px;width:12px;height:12px;border-radius:50%}
+.territory-card .territory-watch{padding-top:10px;border-top:1px solid var(--line);color:var(--ink)}
+@media(max-width:850px){.wheel-layout,.territory-exploration{grid-template-columns:1fr}.wheel-layout .chromatic-wheel,.territory-wheel{max-width:380px}.wheel-legend{max-width:600px;margin:auto;width:100%}}
+@media(max-width:600px){.dual-color-grid{grid-template-columns:1fr}.wheel-layout{gap:15px}.chromatic-wheel{max-width:340px}.territory-exploration{gap:18px}.territory-card{padding:18px}.territory-card h3{font-size:21px}}
+@media print{.wheel-layout,.territory-exploration{grid-template-columns:1fr 1fr;gap:12px}.chromatic-wheel{max-width:290px}.territory-card{padding:10px}.territory-card>p:not(.route-tag){font-size:9px}.dual-color-grid{grid-template-columns:1fr 1fr}}
