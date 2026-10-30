@@ -142,37 +142,28 @@ function keywordProfile(data){
  return tests.find(x=>x.re.test(text))||{h:195,label:'equilibrio y contemporaneidad'};
 }
 function makeRouteSet(data,competitors){
- const profile=keywordProfile(data);
- const colors=competitors.flatMap(b=>b.colors.map(c=>({...c,brand:b.name,h:hue(c.hex)}))).filter(c=>c.h!==null);
+ const profile=keywordProfile(data), colors=competitors.flatMap(b=>b.colors.map(c=>({...c,brand:b.name,h:hue(c.hex)}))).filter(c=>c.h!==null);
  const distance=(a,b)=>Math.abs(((a-b+540)%360)-180);
  const familyNamesByHue=h=>h<18||h>=345?'rojo':h<45?'naranja':h<68?'amarillo':h<160?'verde':h<205?'turquesa':h<255?'azul':h<290?'violeta':'magenta';
- const ranked=[...colors].sort((a,b)=>distance(a.h,profile.h)-distance(b.h,profile.h));
- const affinity=ranked[0]||{hex:'#2764A8',h:215};
- const affinityColor=window.TerritorioColor.adjustOklch(affinity.hex,{L:.57,C:Math.min(.19,window.TerritorioColor.toOklch(affinity.hex).C),h:affinity.h});
- const used=colors.map(c=>c.h);
- const candidates=Array.from({length:72},(_,i)=>i*5);
+ const ranked=[...colors].sort((a,b)=>distance(a.h,profile.h)-distance(b.h,profile.h)), affinity=ranked[0]||{hex:'#2764A8',h:215,brand:'referencia de apoyo'};
+ const used=colors.map(c=>c.h), candidates=Array.from({length:72},(_,i)=>i*5);
  const distinct=candidates.map(h=>({h,nearest:used.length?Math.min(...used.map(x=>distance(h,x))):180})).sort((a,b)=>b.nearest-a.nearest);
- const diffHue=distinct.find(x=>distance(x.h,profile.h)<105)?.h??(profile.h+65)%360;
- const altHue=(profile.h+135)%360;
- const support=(hex,h,light=0.72)=>window.TerritorioColor.adjustOklch(hex,{L:light,C:Math.min(.12,window.TerritorioColor.toOklch(hex).C*.62),h});
- const color2=window.TerritorioColor.adjustOklch('#6C9C9A',{L:.56,C:.13,h:diffHue});
- const color3=window.TerritorioColor.adjustOklch('#B28A56',{L:.58,C:.12,h:altHue});
- const valueText=(data.values||'').toLowerCase(),personality=(data.personality||'').toLowerCase(),audience=(data.audience||'').toLowerCase();
- const profileLabel=profile.label;
- const semantic={
-  215:'Los azules suelen asociarse con estabilidad, competencia y confianza; en tecnología B2B pueden reforzar una lectura de solvencia, aunque son un código frecuente y necesitan una ejecución propia.',
-  145:'Los verdes remiten con facilidad a naturaleza, equilibrio, crecimiento y cuidado. En un proyecto tecnológico solo son pertinentes si se traducen en una promesa creíble —por ejemplo, protección, continuidad o impacto responsable— y no en un adorno “eco”.',
-  265:'Los violetas y azules violáceos pueden sugerir pensamiento avanzado, imaginación y singularidad. Funcionan cuando la marca quiere expresar innovación con personalidad, pero una saturación alta puede desplazar la percepción hacia lo lúdico o experimental.',
-  35:'Los naranjas y ocres aportan energía, proximidad y dinamismo. Pueden humanizar una categoría técnica, aunque un uso demasiado brillante puede restar sobriedad en contextos de seguridad o servicios críticos.',
-  345:'Los rojos y magentas transmiten intensidad, urgencia y presencia. En categorías de riesgo pueden confundirse con alertas o códigos de peligro; conviene reservarlos para acentos si la marca quiere comunicar calma y control.'
- };
+ const accentHue=distinct.find(x=>distance(x.h,profile.h)<110)?.h??(profile.h+65)%360, altHue=(profile.h+135)%360;
+ const main1=window.TerritorioColor.adjustOklch(affinity.hex,{L:.57,C:Math.min(.19,window.TerritorioColor.toOklch(affinity.hex).C),h:affinity.h});
+ const accent=window.TerritorioColor.adjustOklch('#C06A72',{L:.62,C:.15,h:accentHue});
+ const color2=window.TerritorioColor.adjustOklch('#6C9C9A',{L:.56,C:.13,h:accentHue}), color3=window.TerritorioColor.adjustOklch('#B28A56',{L:.58,C:.12,h:altHue});
+ const support=(hex,h,light=.76)=>window.TerritorioColor.adjustOklch(hex,{L:light,C:Math.min(.12,window.TerritorioColor.toOklch(hex).C*.62),h});
+ const semantic={215:'Los azules suelen asociarse con estabilidad, competencia y confianza; su uso extendido exige una ejecución propia.',145:'Los verdes pueden sugerir equilibrio, crecimiento, cuidado y naturaleza; no equivalen automáticamente a sostenibilidad.',265:'Los violetas pueden aportar imaginación y singularidad; su efecto depende de saturación, tono y códigos gráficos.',35:'Los naranjas y ocres pueden comunicar energía y cercanía; un uso muy brillante puede restar sobriedad.',345:'Rojos y magentas concentran atención e intensidad; en algunos sectores pueden leerse como alerta.'};
  const meaning=h=>semantic[[215,145,265,35,345].sort((a,b)=>distance(h,a)-distance(h,b))[0]];
  return [
-  {title:'Afinidad con los códigos del sector',tag:'RECONOCIMIENTO Y CREDIBILIDAD',h:affinity.h,main:affinityColor,support:null,position:'Tomar como punto de partida el tono competidor que mejor encaja con los valores declarados: '+data.values+'. No se trata de copiar su identidad, sino de conservar una señal de categoría que el público pueda reconocer.',why:'La referencia cromática más próxima al perfil descrito es '+affinity.hex+' ('+familyNamesByHue(affinity.h)+'). '+meaning(affinity.h)+' Si el público —'+audience+'— necesita percibir '+profileLabel+', esta vía puede reducir fricción y facilitar comprensión. La singularidad tendría que construirse con un matiz propio, proporción, tipografía, fotografía y sistema gráfico.',watch:'Solo es recomendable si el código observado expresa de verdad los valores del proyecto. Si se elige únicamente porque “todos lo usan”, la marca corre el riesgo de parecer intercambiable.'},
-  {title:'Diferenciación dentro de la categoría',tag:'DISTANCIA CON SENTIDO',h:diffHue,main:color2,support:support(color2,diffHue),position:'Desplazarse hacia una familia menos representada en las referencias, sin perder el vínculo con la personalidad que se quiere construir.',why:'La dirección propone '+familyNamesByHue(diffHue)+' para expresar '+profileLabel+'. '+meaning(diffHue)+' La intención es ganar reconocimiento frente a la muestra sin convertir la diferencia en un gesto gratuito. El color principal lleva el posicionamiento; el tono de apoyo puede modular jerarquía, fondos o información.',watch:'Comprobar que el nuevo código no contradice expectativas funcionales del público ni dificulta accesibilidad, contraste o lectura en interfaces.'},
-  {title:'Un territorio más propio',tag:'PERSONALIDAD Y MEMORABILIDAD',h:altHue,main:color3,support:support(color3,altHue,.76),position:'Construir una voz visual más singular desde la personalidad de marca, no desde la obligación de escoger el color opuesto al competidor.',why:'Esta vía explora '+familyNamesByHue(altHue)+' como expresión de '+data.personality+'. '+meaning(altHue)+' Puede ayudar a alejar la marca de los códigos más previsibles si el producto, el tono verbal y la experiencia sostienen esa promesa. El segundo tono se plantea como apoyo flexible, no como una paleta cerrada.',watch:'Es la opción que más exige validación: probarla en logotipo, interfaz, comunicación y soportes reales para asegurar que la singularidad no compromete claridad ni confianza.'}
+ {title:'Afinidad sectorial + acento diferencial',tag:'RECONOCIMIENTO CON FIRMA PROPIA',h:affinity.h,main:main1,support:accent,roles:'60 % color principal · 30 % tono de apoyo · 10 % acento',position:'Conservar una señal cromática reconocible de la categoría y sumar un acento que no aparece entre los colores validados de las referencias. El acento se elige por su relación con los valores y la personalidad de la marca, no por contraste arbitrario.',why:'La referencia más próxima al perfil descrito es '+affinity.hex+' ('+familyNamesByHue(affinity.h)+'), presente en '+affinity.brand+'. '+meaning(affinity.h)+' Para '+(data.audience||'el público objetivo')+', esta vía puede equilibrar familiaridad y diferenciación. El acento propuesto ('+accent+') queda fuera de las familias cromáticas detectadas en la muestra; úsalo de forma selectiva en llamadas a la acción, enlaces, pequeños detalles o elementos de señalización.',watch:'Antes de adoptarlo, comprueba que el acento no contradice las connotaciones del sector y que funciona en tamaños pequeños. No lo conviertas en un segundo color dominante: su valor está en la aparición medida.'},
+ {title:'Diferenciación dentro de la categoría',tag:'DISTANCIA CON SENTIDO',h:accentHue,main:color2,support:support(color2,accentHue),roles:'60 % color principal · 30 % tono de apoyo · 10 % acento funcional',position:'Desplazarse hacia una familia menos representada en las referencias, conservando una relación con la personalidad que se quiere construir.',why:'La dirección propone '+familyNamesByHue(accentHue)+' para expresar '+profile.label+'. '+meaning(accentHue)+' La intención es ganar reconocimiento frente a esta muestra sin convertir la diferencia en un gesto gratuito. El tono principal lidera; el apoyo puede modular fondos y jerarquías.',watch:'Un hueco en la muestra no demuestra que exista una oportunidad de mercado. Valida la propuesta con personas del público objetivo y en soportes reales.'},
+ {title:'Un territorio más propio',tag:'PERSONALIDAD Y MEMORABILIDAD',h:altHue,main:color3,support:support(color3,altHue,.78),roles:'60 % color principal · 30 % tono de apoyo · 10 % acento funcional',position:'Construir una voz visual más singular desde la personalidad y la promesa de marca, no desde la obligación de escoger el color opuesto al competidor.',why:'Esta vía explora '+familyNamesByHue(altHue)+' como expresión de '+data.personality+'. '+meaning(altHue)+' Puede alejar la marca de los códigos más previsibles si el producto, el tono verbal y la experiencia sostienen esa promesa.',watch:'Es la opción que más exige validación: comprueba que la singularidad no compromete claridad, confianza, legibilidad ni adecuación cultural.'}
  ];
 }
+function luminance(hex){const v=[0,2,4].map(i=>parseInt(hex.slice(i+1,i+3),16)/255).map(c=>c<=.04045?c/12.92:((c+.055)/1.055)**2.4);return .2126*v[0]+.7152*v[1]+.0722*v[2]}
+function contrastRatio(a,b){const x=luminance(a),y=luminance(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05)}
+function contrastLabel(hex,bg){const r=contrastRatio(hex,bg);return r>=4.5?'AA texto normal ('+r.toFixed(2)+':1)':r>=3?'AA texto grande / componentes ('+r.toFixed(2)+':1)':'No alcanza AA ('+r.toFixed(2)+':1)'}
 function renderTerritoryWheel(routes,competitors){
  const host=$('[data-routes]');host.replaceChildren();
  const intro=document.createElement('div');intro.className='comparison-wheel-heading';intro.innerHTML='<h3>Mapa comparado: competencia + propuestas</h3><p>Los puntos numerados corresponden a las tres direcciones sugeridas; los puntos conectados conservan los vínculos cromáticos de cada marca.</p>';
@@ -214,8 +205,10 @@ function renderTerritoryWheel(routes,competitors){
   });
   const pos=document.createElement('p');pos.textContent=r.position;
   const why=document.createElement('p');why.textContent=r.why;
+  const roles=document.createElement('p');roles.className='route-roles';roles.textContent='Proporción orientativa: '+r.roles;
+  const contrast=document.createElement('p');contrast.className='route-contrast';contrast.textContent='Contraste sobre blanco: '+contrastLabel(r.main,'#FFFFFF')+'. Sobre oscuro: '+contrastLabel(r.main,'#292729')+'.';
   const watch=document.createElement('p');watch.className='territory-watch';watch.textContent='Punto crítico: '+r.watch;
-  card.append(top,title,swatches,pos,why,watch);cards.append(card);
+  card.append(top,title,swatches,roles,pos,why,contrast,watch);cards.append(card);
  });
  const note=document.createElement('p');note.className='wheel-caption';note.textContent='La primera rueda muestra los tonos validados de cada competidor. Esta segunda superpone esos mismos tonos con un color principal por vía y, cuando aporta valor, un tono de apoyo. Son puntos de partida para diseñar, no paletas cerradas.';
  host.append(intro,shell,cards,note);
@@ -246,8 +239,10 @@ function analyze(){
  renderCompetitorWheel(competitors);
  const routes=makeRouteSet(data,competitors);
  renderTerritoryWheel(routes,competitors);
- $('[data-recommendation-title]').textContent='No decidir por oposición: decidir por posicionamiento.';
- $('[data-recommendation]').textContent='Antes de escoger un color, contrasta las tres direcciones con la promesa real del producto, la sensibilidad del público y los contextos de uso. La ruta más valiosa no será necesariamente la menos frecuente: será la que consiga expresar '+data.values+' con credibilidad y una voz visual reconocible. La muestra actual sirve para formular hipótesis, no para declarar una oportunidad de mercado probada.';
+ const sampleNote=$('[data-sample-warning]');
+ if(sampleNote){sampleNote.hidden=competitors.length>2;sampleNote.textContent='Lectura preliminar: solo has comparado dos marcas. Estas referencias permiten iniciar una conversación cromática, pero no describir de forma fiable el paisaje del sector ni sus oportunidades. Añade más marcas antes de extraer conclusiones amplias.';}
+ $('[data-recommendation-title]').textContent='Empieza por la afinidad, pero encuentra tu propia firma.';
+ $('[data-recommendation]').textContent='La primera vía puede ser un punto de partida razonable si el color de referencia refleja de verdad los valores de '+data.brandName+'. El acento diferencial '+routes[0].support+' debe funcionar como firma selectiva, no como decoración. Antes de decidir, prueba la combinación en logotipo, interfaz, textos, fondos claros y oscuros. Comprueba también la respuesta del público: este análisis propone hipótesis para diseñar y validar, no una decisión automática ni un estudio de mercado.';
  results.hidden=false;status.textContent='Análisis preparado con '+competitors.length+' marcas y '+total+' colores validados.';results.scrollIntoView({behavior:'smooth',block:'start'});
 }
 $('[data-analyze]').addEventListener('click',analyze);
