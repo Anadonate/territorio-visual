@@ -23,4 +23,6 @@ Territorio Visual es una herramienta de apoyo estratégico para definir la ident
 
 ## Desarrollo
 
-Sitio estático hecho con HTML, CSS y JavaScript nativo. No necesita backend, instalación de paquetes ni API de IA. Para trabajar en local, abre `index.html` en un navegador moderno. El sitio se publica con GitHub Pages desde la rama `fase-2-redisenada`.
+El frontend estático está hecho con HTML, CSS y JavaScript nativo y se publica con GitHub Pages desde la rama `fase-2-redisenada`. La extracción y validación cromática se realiza en el navegador. Se ha añadido una integración opcional con un Cloudflare Worker y la API de OpenAI; para activarla hay que desplegar el Worker, configurar sus secretos y definir su URL en `js/ai-config.js`. Sin esa configuración, la herramienta mantiene el análisis local actual.
+
+La metodología, las instrucciones del consultor, el esquema de respuesta y la arquitectura se documentan en `docs/` y `ai/`. Consulta `docs/arquitectura-integracion-ia.md` antes de desplegar. La clave de OpenAI nunca debe incluirse en el frontend ni en este repositorio.
