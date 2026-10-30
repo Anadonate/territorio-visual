@@ -132,16 +132,17 @@ export default {
     }
     if (request.method !== "POST") return json({ error: "Método no permitido." }, 405);
     if (!allowed.includes(origin)) return json({ error: "Origen no autorizado." }, 403);
-    if (!env.OPENAI_API_KEY) return json({ error: "El servicio de análisis todavía no está configurado." }, 503);
+    if (!env.OPENAI_API_KEY || !env.OPENAI_MODEL) return json({ error: "El servicio de análisis todavía no está configurado." }, 503, { "Access-Control-Allow-Origin": origin, "Vary": "Origin" });
+    const corsHeaders = { "Access-Control-Allow-Origin": origin, "Vary": "Origin" };
     const declaredLength = Number(request.headers.get("Content-Length") || 0);
-    if (declaredLength > MAX_BODY_BYTES) return json({ error: "La petición supera el tamaño permitido." }, 413);
+    if (declaredLength > MAX_BODY_BYTES) return json({ error: "La petición supera el tamaño permitido." }, 413, corsHeaders);
     let raw;
-    try { raw = await request.text(); } catch { return json({ error: "No se ha podido leer la petición." }, 400); }
+    try { raw = await request.text(); } catch { return json({ error: "No se ha podido leer la petición." }, 400, corsHeaders); }
     if (raw.length > MAX_BODY_BYTES) return json({ error: "La petición supera el tamaño permitido." }, 413);
     let data;
-    try { data = JSON.parse(raw); } catch { return json({ error: "El formato de la petición no es JSON válido." }, 400); }
+    try { data = JSON.parse(raw); } catch { return json({ error: "El formato de la petición no es JSON válido." }, 400, corsHeaders); }
     const problem = validatePayload(data);
-    if (problem) return json({ error: problem }, 400);
+    if (problem) return json({ error: problem }, 400, corsHeaders);
 
     const input = {
       briefing: data.briefing,
@@ -157,7 +158,7 @@ export default {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          model: env.OPENAI_MODEL || "gpt-6",
+          model: env.OPENAI_MODEL,
           store: false,
           max_output_tokens: 2600,
           input: [
@@ -177,11 +178,11 @@ export default {
       const result = await response.json();
       if (!response.ok) {
         const message = result?.error?.message || "No se ha podido completar el análisis.";
-        return json({ error: message }, response.status === 429 ? 429 : 502);
+        return json({ error: message }, response.status === 429 ? 429 : 502, corsHeaders);
       }
       const analysis = JSON.parse(extractOutputText(result));
       if (!Array.isArray(analysis.territories) || analysis.territories.length !== 3) {
-        return json({ error: "La respuesta no cumple la metodología de tres territorios." }, 502);
+        return json({ error: "La respuesta no cumple la metodología de tres territorios." }, 502, corsHeaders);
       }
       return json({ analysis }, 200, {
         "Access-Control-Allow-Origin": origin,
