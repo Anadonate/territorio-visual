@@ -1,0 +1,161 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "executive_summary",
+    "competitive_diagnosis",
+    "brand_fit",
+    "territories",
+    "recommendation"
+  ],
+  "properties": {
+    "executive_summary": {
+      "type": "string"
+    },
+    "competitive_diagnosis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "observations",
+        "interpretation",
+        "recurring_codes",
+        "potential_conventions",
+        "limitations"
+      ],
+      "properties": {
+        "observations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "interpretation": {
+          "type": "string"
+        },
+        "recurring_codes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "potential_conventions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "brand_fit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "alignment",
+        "tensions",
+        "chromatic_implications"
+      ],
+      "properties": {
+        "alignment": {
+          "type": "string"
+        },
+        "tensions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "chromatic_implications": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "territories": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "concept",
+          "chromatic_direction",
+          "relationship_to_sample",
+          "briefing_fit",
+          "opportunities",
+          "risks",
+          "validation_tests"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "concept": {
+            "type": "string"
+          },
+          "chromatic_direction": {
+            "type": "string"
+          },
+          "relationship_to_sample": {
+            "type": "string"
+          },
+          "briefing_fit": {
+            "type": "string"
+          },
+          "opportunities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "risks": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "validation_tests": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "recommendation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "preferred_territory",
+        "reasoning",
+        "alternative_to_preserve",
+        "validation_tests"
+      ],
+      "properties": {
+        "preferred_territory": {
+          "type": "string"
+        },
+        "reasoning": {
+          "type": "string"
+        },
+        "alternative_to_preserve": {
+          "type": "string"
+        },
+        "validation_tests": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
