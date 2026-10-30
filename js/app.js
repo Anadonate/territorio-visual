@@ -100,9 +100,15 @@ function polar(hex,radius=150){
 }
 function svgEl(name,attrs={}){const el=document.createElementNS('http://www.w3.org/2000/svg',name);Object.entries(attrs).forEach(([k,v])=>el.setAttribute(k,String(v)));return el}
 function wheelBase(svg){
- svg.setAttribute('viewBox','0 0 440 440');svg.setAttribute('role','img');
- [45,90,135,180].forEach(r=>svg.append(svgEl('circle',{cx:220,cy:220,r,fill:'none',stroke:'#d8d0c4','stroke-width':1})));
- for(let a=0;a<360;a+=30){const t=(a-90)*Math.PI/180;svg.append(svgEl('line',{x1:220+Math.cos(t)*45,y1:220+Math.sin(t)*45,x2:220+Math.cos(t)*180,y2:220+Math.sin(t)*180,stroke:'#e5ded4','stroke-width':1}))}
+ svg.setAttribute('viewBox','0 0 440 440');svg.setAttribute('role','img');svg.setAttribute('aria-label','Rueda cromática de tonos');
+ const polarPoint=(angle,r)=>({x:220+Math.cos(angle*Math.PI/180)*r,y:220+Math.sin(angle*Math.PI/180)*r});
+ for(let h=0;h<360;h+=15){
+  const a1=h-90,a2=h+15-90,p1=polarPoint(a1,178),p2=polarPoint(a2,178);
+  const d='M 220 220 L '+p1.x+' '+p1.y+' A 178 178 0 0 1 '+p2.x+' '+p2.y+' Z';
+  svg.append(svgEl('path',{d,fill:'hsl('+((h+7.5)%360)+' 72% 57%)','fill-opacity':.22,stroke:'#fff','stroke-width':1}));
+ }
+ [45,90,135,180].forEach(r=>svg.append(svgEl('circle',{cx:220,cy:220,r,fill:'none',stroke:'#c9c0b4','stroke-width':.8})));
+ for(let a=0;a<360;a+=30){const t=(a-90)*Math.PI/180;svg.append(svgEl('line',{x1:220+Math.cos(t)*45,y1:220+Math.sin(t)*45,x2:220+Math.cos(t)*180,y2:220+Math.sin(t)*180,stroke='#b9afa2','stroke-width':.8,'stroke-opacity':.7}))}
  svg.append(svgEl('circle',{cx:220,cy:220,r:4,fill:'#292729'}));
 }
 function renderCompetitorWheel(competitors){
@@ -137,44 +143,82 @@ function keywordProfile(data){
 }
 function makeRouteSet(data,competitors){
  const profile=keywordProfile(data);
- const hues=competitors.flatMap(b=>b.colors.map(c=>hue(c.hex))).filter(h=>h!==null);
- const circularMean=hues.length?((Math.atan2(hues.reduce((s,h)=>s+Math.sin(h*Math.PI/180),0),hues.reduce((s,h)=>s+Math.cos(h*Math.PI/180),0))*180/Math.PI+360)%360):profile.h;
- const nearest=(target)=>Math.min(...hues.map(h=>Math.abs(((h-target+540)%360)-180)),180);
+ const colors=competitors.flatMap(b=>b.colors.map(c=>({...c,brand:b.name,h:hue(c.hex)}))).filter(c=>c.h!==null);
+ const distance=(a,b)=>Math.abs(((a-b+540)%360)-180);
+ const familyNamesByHue=h=>h<18||h>=345?'rojo':h<45?'naranja':h<68?'amarillo':h<160?'verde':h<205?'turquesa':h<255?'azul':h<290?'violeta':'magenta';
+ const ranked=[...colors].sort((a,b)=>distance(a.h,profile.h)-distance(b.h,profile.h));
+ const affinity=ranked[0]||{hex:'#2764A8',h:215};
+ const affinityColor=window.TerritorioColor.adjustOklch(affinity.hex,{L:.57,C:Math.min(.19,window.TerritorioColor.toOklch(affinity.hex).C),h:affinity.h});
+ const used=colors.map(c=>c.h);
+ const candidates=Array.from({length:72},(_,i)=>i*5);
+ const distinct=candidates.map(h=>({h,nearest:used.length?Math.min(...used.map(x=>distance(h,x))):180})).sort((a,b)=>b.nearest-a.nearest);
+ const diffHue=distinct.find(x=>distance(x.h,profile.h)<105)?.h??(profile.h+65)%360;
+ const altHue=(profile.h+135)%360;
+ const support=(hex,h,light=0.72)=>window.TerritorioColor.adjustOklch(hex,{L:light,C:Math.min(.12,window.TerritorioColor.toOklch(hex).C*.62),h});
+ const color2=window.TerritorioColor.adjustOklch('#6C9C9A',{L:.56,C:.13,h:diffHue});
+ const color3=window.TerritorioColor.adjustOklch('#B28A56',{L:.58,C:.12,h:altHue});
+ const valueText=(data.values||'').toLowerCase(),personality=(data.personality||'').toLowerCase(),audience=(data.audience||'').toLowerCase();
+ const profileLabel=profile.label;
+ const semantic={
+  215:'Los azules suelen asociarse con estabilidad, competencia y confianza; en tecnología B2B pueden reforzar una lectura de solvencia, aunque son un código frecuente y necesitan una ejecución propia.',
+  145:'Los verdes remiten con facilidad a naturaleza, equilibrio, crecimiento y cuidado. En un proyecto tecnológico solo son pertinentes si se traducen en una promesa creíble —por ejemplo, protección, continuidad o impacto responsable— y no en un adorno “eco”.',
+  265:'Los violetas y azules violáceos pueden sugerir pensamiento avanzado, imaginación y singularidad. Funcionan cuando la marca quiere expresar innovación con personalidad, pero una saturación alta puede desplazar la percepción hacia lo lúdico o experimental.',
+  35:'Los naranjas y ocres aportan energía, proximidad y dinamismo. Pueden humanizar una categoría técnica, aunque un uso demasiado brillante puede restar sobriedad en contextos de seguridad o servicios críticos.',
+  345:'Los rojos y magentas transmiten intensidad, urgencia y presencia. En categorías de riesgo pueden confundirse con alertas o códigos de peligro; conviene reservarlos para acentos si la marca quiere comunicar calma y control.'
+ };
+ const meaning=h=>semantic[[215,145,265,35,345].sort((a,b)=>distance(h,a)-distance(h,b))[0]];
  return [
-  {title:'Afinidad con personalidad propia',tag:'EVOLUCIONAR EL CÓDIGO',h:profile.h,position:'Una entrada reconocible en la categoría, interpretada desde '+profile.label+'.',why:'Puede ser pertinente si la marca necesita credibilidad inmediata o si el público espera ciertos códigos visuales. La oportunidad estaría en la temperatura, la saturación, la proporción y el sistema gráfico, no en copiar el color dominante.',watch:'Evitar que la familiaridad se convierta en indistinción. El matiz y la ejecución deberán sostener una voz propia.'},
-  {title:'Desplazamiento cromático',tag:'DIFERENCIARSE SIN RUIDO',h:(circularMean+52)%360,position:'Buscar una distancia perceptible respecto a la zona más repetida de la muestra, sin forzar un contraste opuesto.',why:'Es una hipótesis útil cuando la marca quiere ser reconocible en su sector, pero no parecer una variante más. La distancia debe comprobarse junto al tono verbal, la fotografía, la tipografía y los códigos de la categoría.',watch:'No convertir la diferencia en un fin. Si el tono no expresa la propuesta de valor, será una ocurrencia, no una estrategia.'},
-  {title:'Territorio expresivo alternativo',tag:'REDEFINIR LA EXPECTATIVA',h:(profile.h+126)%360,position:'Explorar un lenguaje menos habitual en la muestra, siempre que encaje con la personalidad y las expectativas del público.',why:'Puede abrir una posición más singular si el producto, la experiencia y el relato de marca justifican ese cambio. La ruptura debe ser coherente en todos los puntos de contacto y no depender únicamente del color.',watch:'Mayor riesgo de alejarse de las señales que ayudan a entender la categoría. Requiere validación con público y contexto competitivo más amplio.'}
+  {title:'Afinidad con los códigos del sector',tag:'RECONOCIMIENTO Y CREDIBILIDAD',h:affinity.h,main:affinityColor,support:null,position:'Tomar como punto de partida el tono competidor que mejor encaja con los valores declarados: '+data.values+'. No se trata de copiar su identidad, sino de conservar una señal de categoría que el público pueda reconocer.',why:'La referencia cromática más próxima al perfil descrito es '+affinity.hex+' ('+familyNamesByHue(affinity.h)+'). '+meaning(affinity.h)+' Si el público —'+audience+'— necesita percibir '+profileLabel+', esta vía puede reducir fricción y facilitar comprensión. La singularidad tendría que construirse con un matiz propio, proporción, tipografía, fotografía y sistema gráfico.',watch:'Solo es recomendable si el código observado expresa de verdad los valores del proyecto. Si se elige únicamente porque “todos lo usan”, la marca corre el riesgo de parecer intercambiable.'},
+  {title:'Diferenciación dentro de la categoría',tag:'DISTANCIA CON SENTIDO',h:diffHue,main:color2,support:support(color2,diffHue),position:'Desplazarse hacia una familia menos representada en las referencias, sin perder el vínculo con la personalidad que se quiere construir.',why:'La dirección propone '+familyNamesByHue(diffHue)+' para expresar '+profileLabel+'. '+meaning(diffHue)+' La intención es ganar reconocimiento frente a la muestra sin convertir la diferencia en un gesto gratuito. El color principal lleva el posicionamiento; el tono de apoyo puede modular jerarquía, fondos o información.',watch:'Comprobar que el nuevo código no contradice expectativas funcionales del público ni dificulta accesibilidad, contraste o lectura en interfaces.'},
+  {title:'Un territorio más propio',tag:'PERSONALIDAD Y MEMORABILIDAD',h:altHue,main:color3,support:support(color3,altHue,.76),position:'Construir una voz visual más singular desde la personalidad de marca, no desde la obligación de escoger el color opuesto al competidor.',why:'Esta vía explora '+familyNamesByHue(altHue)+' como expresión de '+data.personality+'. '+meaning(altHue)+' Puede ayudar a alejar la marca de los códigos más previsibles si el producto, el tono verbal y la experiencia sostienen esa promesa. El segundo tono se plantea como apoyo flexible, no como una paleta cerrada.',watch:'Es la opción que más exige validación: probarla en logotipo, interfaz, comunicación y soportes reales para asegurar que la singularidad no compromete claridad ni confianza.'}
  ];
 }
 function renderTerritoryWheel(routes,competitors){
  const host=$('[data-routes]');host.replaceChildren();
- const wrap=document.createElement('div');wrap.className='territory-exploration';
- const svg=svgEl('svg',{class:'chromatic-wheel territory-wheel'});wheelBase(svg);
- const markerColors=['#EA5A77','#46B382','#D2A158'];
- routes.forEach((route,i)=>{
-  const angle=(route.h-90)*Math.PI/180;const p={x:220+Math.cos(angle)*148,y:220+Math.sin(angle)*148};
-  svg.append(svgEl('circle',{cx:p.x,cy:p.y,r:27,fill:markerColors[i],'fill-opacity':.13,stroke:markerColors[i],'stroke-width':2}));
-  svg.append(svgEl('circle',{cx:p.x,cy:p.y,r:7,fill:markerColors[i]}));
-  const t=svgEl('text',{x:p.x,y:p.y-38,'text-anchor':'middle','font-size':12,fill:'#292729','font-weight':700});t.textContent='0'+(i+1);svg.append(t);
+ const intro=document.createElement('div');intro.className='comparison-wheel-heading';intro.innerHTML='<h3>Mapa comparado: competencia + propuestas</h3><p>Los puntos numerados corresponden a las tres direcciones sugeridas; los puntos conectados conservan los vínculos cromáticos de cada marca.</p>';
+ const svg=svgEl('svg',{class:'chromatic-wheel proposal-wheel'});wheelBase(svg);
+ competitors.forEach((brand,i)=>{
+  const pts=brand.colors.map(c=>({color:c,point:polar(c.hex)}));
+  if(pts.length>1)for(let j=1;j<pts.length;j++)svg.append(svgEl('line',{x1:pts[0].point.x,y1:pts[0].point.y,x2:pts[j].point.x,y2:pts[j].point.y,stroke:'#292729','stroke-width':1.3,'stroke-opacity':.45}));
+  pts.forEach(p=>svg.append(svgEl('circle',{cx:p.point.x,cy:p.point.y,r:7,fill:p.color.hex,stroke:'#fff','stroke-width':1.5})));
  });
+ routes.forEach((r,i)=>{
+  const p=polar(r.main,172);
+  svg.append(svgEl('circle',{cx:p.x,cy:p.y,r:16,fill:r.main,stroke:'#292729','stroke-width':1.5}));
+  const t=svgEl('text',{x:p.x,y:p.y-22,'text-anchor':'middle','font-size':12,fill:'#292729','font-weight':800});t.textContent='0'+(i+1);svg.append(t);
+ });
+ const legend=document.createElement('div');legend.className='proposal-wheel-legend';
+ competitors.forEach((brand,i)=>{
+  const row=document.createElement('p');row.innerHTML='<strong>'+(i+1)+'. '+brand.name+'</strong> · '+brand.colors.map(c=>c.hex).join(' / ');legend.append(row);
+ });
+ routes.forEach((r,i)=>{
+  const row=document.createElement('p');row.innerHTML='<span class="proposal-dot" style="background:'+r.main+'"></span><strong>0'+(i+1)+' · '+r.title+'</strong> · '+r.main+(r.support?' + '+r.support:'');legend.append(row);
+ });
+ const shell=document.createElement('div');shell.className='proposal-wheel-layout';shell.append(svg,legend);
  const cards=document.createElement('div');cards.className='territory-cards';
  routes.forEach((r,i)=>{
   const card=document.createElement('article');card.className='territory-card';
-  const top=document.createElement('p');top.className='route-tag';top.textContent='TERRITORIO 0'+(i+1)+' · '+r.tag;
+  const top=document.createElement('p');top.className='route-tag';top.textContent='VÍA 0'+(i+1)+' · '+r.tag;
   const title=document.createElement('h3');title.textContent=r.title;
-  const marker=document.createElement('span');marker.className='territory-marker';marker.style.background=markerColors[i];
+  const swatches=document.createElement('div');swatches.className='route-colors';
+  [{name:'Principal',hex:r.main},{name:'Apoyo',hex:r.support}].filter(x=>x.hex).forEach(x=>{
+   const sw=document.createElement('div');sw.className='route-color';sw.style.setProperty('--route-color',x.hex);
+   const label=document.createElement('span');label.textContent=x.name;
+   const code=document.createElement('strong');code.textContent=x.hex;
+   sw.append(label,code);swatches.append(sw);
+  });
   const pos=document.createElement('p');pos.textContent=r.position;
   const why=document.createElement('p');why.textContent=r.why;
   const watch=document.createElement('p');watch.className='territory-watch';watch.textContent='Punto crítico: '+r.watch;
-  card.append(top,title,marker,pos,why,watch);cards.append(card);
+  card.append(top,title,swatches,pos,why,watch);cards.append(card);
  });
- const note=document.createElement('p');note.className='wheel-caption';note.textContent='Los tres puntos son territorios de exploración, no colores definitivos ni paletas cerradas. La rueda sitúa cada hipótesis por familia cromática; el desarrollo de identidad decidirá después matices, combinaciones y proporciones.';
- wrap.append(svg,cards);host.append(wrap,note);
+ const note=document.createElement('p');note.className='wheel-caption';note.textContent='La primera rueda muestra los tonos validados de cada competidor. Esta segunda superpone esos mismos tonos con un color principal por vía y, cuando aporta valor, un tono de apoyo. Son puntos de partida para diseñar, no paletas cerradas.';
+ host.append(intro,shell,cards,note);
 }
 function analyze(){
  if(!form.reportValidity()){form.reportValidity();$('#briefing').scrollIntoView({behavior:'smooth'});return}
  const competitors=entries.map((entry,i)=>({entry,name:entry.querySelector('[data-name]').value.trim()||'Marca '+(i+1),colors:getColors(entry)})).filter(b=>b.colors.length);
- if(competitors.length<2){status.textContent='Añade y valida al menos dos marcas de referencia. Cada marca puede aportar uno o dos colores.';$('#competencia').scrollIntoView({behavior:'smooth'});return}
+ if(competitors.length<2){status.textContent='Añade y valida al menos dos marcas de referencia. Cada marca puede aportar hasta tres colores y un fondo opcional.';$('#competencia').scrollIntoView({behavior:'smooth'});return}
  const data=Object.fromEntries(new FormData(form).entries());
  const all=competitors.flatMap(b=>b.colors);
  const counts={};all.forEach(c=>{const f=family(c.hex);counts[f]=(counts[f]||0)+1});
@@ -182,15 +226,18 @@ function analyze(){
  const total=all.length,top=ordered[0],concentration=top[1]/total;
  const repeated=ordered.filter(x=>x[1]>1);
  const families=ordered.map(([f,n])=>familyNames[f]+' ('+n+'/'+total+' tonos validados)').join(', ');
- const pairBrands=competitors.filter(b=>b.colors.length===2).length;
+ const pairBrands=competitors.filter(b=>b.colors.length>=2).length;
  $('[data-result-brand]').textContent=data.brandName;
- $('[data-result-intro]').textContent='Lectura exploratoria para '+data.brandName+' en '+data.sector+', considerando el público ('+data.audience+') y la personalidad buscada ('+data.personality+').';
- $('[data-observation]').textContent='En esta muestra de '+competitors.length+' marcas se han validado '+total+' tonos: '+families+'. '+(pairBrands?pairBrands+' marcas aparecen con dos colores corporativos validados; se conserva esa relación en el mapa. ':'')+(repeated.length?'Las familias que se repiten son '+repeated.map(x=>familyNames[x[0]]).join(', ')+'. ':'No hay una familia repetida con claridad en la muestra. ')+'Esto permite describir coincidencias dentro de las referencias elegidas, pero no medir por sí solo la saturación de todo el mercado.';
- let interpretation;
- if(concentration>=.55) interpretation='La muestra presenta una concentración apreciable en '+familyNames[top[0]]+'. Esto puede hacer que una nueva marca situada en esa misma zona necesite construir singularidad mediante matiz, composición, tipografía y códigos de aplicación; no implica que deba evitarla. ';
- else interpretation='La muestra no se organiza alrededor de una única familia dominante. Esa diversidad reduce la utilidad de buscar una diferenciación basada solo en “elegir otro color”; conviene definir primero qué percepción necesita ocupar la marca. ';
- interpretation+='El briefing pide transmitir '+data.values+' y proyectar una imagen '+data.personality+'. La tensión estratégica que merece explorarse es cómo expresar esos atributos sin caer en los clichés visuales que el público ya asocia a la categoría. Los logotipos no revelan por qué sus propietarios eligieron esos tonos: esa explicación requeriría investigación de marca, comunicación y audiencia.';
- $('[data-interpretation]').textContent=interpretation;
+ $('[data-result-intro]').textContent='Diagnóstico cromático exploratorio para '+data.brandName+' · '+data.sector+' · público: '+data.audience+'.';
+ const familySummary=ordered.map(([f,n])=>familyNames[f]+' ('+n+')').join(', ');
+ const multi=competitors.filter(b=>b.colors.length>=2).map(b=>b.name+' ('+b.colors.length+' tonos)').join(', ');
+ $('[data-observation]').textContent='En las '+competitors.length+' referencias se han validado '+total+' colores corporativos. Las familias presentes son '+familySummary+'. '+(repeated.length?'La repetición más visible se concentra en '+repeated.map(x=>familyNames[x[0]]).join(' y ')+'. ':'No aparece una familia cromática claramente repetida. ')+(multi?'Hay identidades que combinan varios tonos: '+multi+'. ':'')+'La lectura importante no es contar colores de forma aislada, sino observar qué códigos se repiten, cuáles conviven dentro de una misma marca y qué personalidad proyecta el conjunto. Este mapa describe únicamente la muestra aportada; no representa un estudio completo del mercado.';
+ const profile=keywordProfile(data);
+ const semanticByHue={215:'El azul suele activar asociaciones de confianza, estabilidad y competencia; es útil en servicios donde la seguridad percibida importa, aunque su uso extendido puede volverlo genérico.',145:'El verde puede sugerir equilibrio, crecimiento, cuidado y naturaleza; no equivale automáticamente a sostenibilidad y necesita una promesa verificable.',265:'El violeta puede aportar imaginación, pensamiento no convencional y sofisticación; su efecto depende de saturación, tono y códigos gráficos.',35:'Los naranjas y ocres comunican energía, cercanía y dinamismo; si se intensifican pueden perder sobriedad.',345:'Rojos y magentas concentran atención, intensidad y urgencia; en sectores de riesgo pueden leerse como alerta.'};
+ const nearestHue=[215,145,265,35,345].sort((a,b)=>Math.abs(((a-profile.h+540)%360)-180)-Math.abs(((b-profile.h+540)%360)-180))[0];
+ const semantic=semanticByHue[nearestHue];
+ const concentrationText=concentration>=.55?'La muestra sí presenta una inclinación apreciable hacia '+familyNames[top[0]]+'. No demuestra saturación del sector, pero sí aconseja no recurrir a una solución cromática indiferenciada dentro de esta selección.':'La muestra no está dominada por una única familia. Por eso, diferenciarse no consiste simplemente en escoger el color menos frecuente: hay que decidir qué percepción debe liderar la marca.';
+ $('[data-interpretation]').textContent='El briefing pide transmitir '+data.values+' y construir una personalidad '+data.personality+'. Para '+data.brandName+', dirigida a '+data.audience+', el criterio cromático debe resolver una tensión: resultar pertinente para la categoría sin adoptar una estética prestada. '+semantic+' '+concentrationText+' La familia que mejor conecta, como hipótesis inicial, con el perfil descrito es '+profile.label+'. Conviene comprobarla en aplicaciones reales: el mismo tono puede parecer tecnológico, frío, cercano o institucional según su luminosidad, saturación, tipografía, fotografía y proporción. No podemos atribuir a cada competidor una intención estratégica solo a partir del logotipo; sí podemos evaluar el efecto perceptivo de sus códigos y decidir si conviene compartirlos o desplazarse.';
  renderCompetitorWheel(competitors);
  const routes=makeRouteSet(data,competitors);
  renderTerritoryWheel(routes,competitors);
