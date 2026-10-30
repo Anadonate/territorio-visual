@@ -27,7 +27,7 @@ function setBackground(entry,hex,confidence){
  root.querySelector('[data-background-source]').textContent='Fondo detectado · confianza '+confidence+'. Inclúyelo solo si es parte de la identidad visual.';
 }
 function getColors(entry){
- const colors=['a','b','c'].map(slot=>{
+ const colors=['a','b'].map(slot=>{
   const root=entry.querySelector('[data-color-slot="'+slot+'"]');
   const hex=root.querySelector('[data-hex]').value.trim();
   return {hex:hex.toUpperCase(),included:root.querySelector('[data-include]').checked&&hexPattern.test(hex),slot};
@@ -53,7 +53,7 @@ entries.forEach((entry,index)=>{
    preview.replaceChildren();const img=document.createElement('img');img.src=url;img.alt='Vista previa del logotipo';preview.append(img);title.textContent=f.name;
    entry.querySelector('[data-color-control]').hidden=false;
    const foreground=(extracted.colors||[]).slice(0,3);
-   ['a','b','c'].forEach((slot,i)=>{
+   ['a','b'].forEach((slot,i)=>{
     const color=foreground[i];
     const root=entry.querySelector('[data-color-slot="'+slot+'"]');
     if(color)setSlot(entry,slot,color.hex,'Tono '+(i+1)+' detectado en el logotipo · '+Math.round((color.share||0)*100)+'% del área analizada · confirma');
@@ -64,7 +64,7 @@ entries.forEach((entry,index)=>{
     }
    });
    setBackground(entry,extracted.background,extracted.backgroundConfidence);
-   setStatus(entry,'Se han propuesto hasta tres tonos del logotipo. El fondo se analiza por separado y aparece desactivado inicialmente. Revisa qué colores pertenecen realmente a la identidad de esta marca.');
+   setStatus(entry,'Se han propuesto dos tonos del logotipo. El fondo se analiza por separado y aparece desactivado inicialmente. Revisa qué colores pertenecen realmente a la identidad de esta marca.');
   }catch(error){title.textContent='No se pudo leer el archivo';setStatus(entry,error.message||'Prueba con un PNG, JPEG o SVG válido.',true)}
  });
  entry.querySelectorAll('[data-color-slot]').forEach(root=>{
@@ -158,7 +158,7 @@ function makeRouteSet(data,competitors){
  return [
  {title:'Afinidad sectorial + acento diferencial',tag:'RECONOCIMIENTO CON FIRMA PROPIA',h:affinity.h,main:main1,support:accent,roles:'60 % color principal · 30 % tono de apoyo · 10 % acento',position:'Conservar una señal cromática reconocible de la categoría y sumar un acento que no aparece entre los colores validados de las referencias. El acento se elige por su relación con los valores y la personalidad de la marca, no por contraste arbitrario.',why:'La referencia más próxima al perfil descrito es '+affinity.hex+' ('+familyNamesByHue(affinity.h)+'), presente en '+affinity.brand+'. '+meaning(affinity.h)+' Para '+(data.audience||'el público objetivo')+', esta vía puede equilibrar familiaridad y diferenciación. El acento propuesto ('+accent+') queda fuera de las familias cromáticas detectadas en la muestra; úsalo de forma selectiva en llamadas a la acción, enlaces, pequeños detalles o elementos de señalización.',watch:'Antes de adoptarlo, comprueba que el acento no contradice las connotaciones del sector y que funciona en tamaños pequeños. No lo conviertas en un segundo color dominante: su valor está en la aparición medida.'},
  {title:'Diferenciación dentro de la categoría',tag:'DISTANCIA CON SENTIDO',h:accentHue,main:color2,support:support(color2,accentHue),roles:'60 % color principal · 30 % tono de apoyo · 10 % acento funcional',position:'Desplazarse hacia una familia menos representada en las referencias, conservando una relación con la personalidad que se quiere construir.',why:'La dirección propone '+familyNamesByHue(accentHue)+' para expresar '+profile.label+'. '+meaning(accentHue)+' La intención es ganar reconocimiento frente a esta muestra sin convertir la diferencia en un gesto gratuito. El tono principal lidera; el apoyo puede modular fondos y jerarquías.',watch:'Un hueco en la muestra no demuestra que exista una oportunidad de mercado. Valida la propuesta con personas del público objetivo y en soportes reales.'},
- {title:'Un territorio más propio',tag:'PERSONALIDAD Y MEMORABILIDAD',h:altHue,main:color3,support:support(color3,altHue,.78),roles:'60 % color principal · 30 % tono de apoyo · 10 % acento funcional',position:'Construir una voz visual más singular desde la personalidad y la promesa de marca, no desde la obligación de escoger el color opuesto al competidor.',why:'Esta vía explora '+familyNamesByHue(altHue)+' como expresión de '+data.personality+'. '+meaning(altHue)+' Puede alejar la marca de los códigos más previsibles si el producto, el tono verbal y la experiencia sostienen esa promesa.',watch:'Es la opción que más exige validación: comprueba que la singularidad no compromete claridad, confianza, legibilidad ni adecuación cultural.'}
+ {title:'Un territorio más propio',tag:'PERSONALIDAD Y MEMORABILIDAD',h:altHue,main:color3,support:support(color3,altHue,.78),roles:'60 % color principal · 30 % tono de apoyo · 10 % acento funcional',position:'Construir una voz visual más singular desde la personalidad y la promesa de marca, no desde la obligación de escoger el color opuesto al competidor.',why:'Esta vía explora '+familyNamesByHue(altHue)+' como posible expresión de '+data.personality+'. '+meaning(altHue)+' Puede alejar la marca de los códigos más previsibles si el producto, el tono verbal y la experiencia sostienen esa promesa.',watch:'Es la opción que más exige validación: comprueba que la singularidad no compromete claridad, confianza, legibilidad ni adecuación cultural.'}
  ];
 }
 function luminance(hex){const v=[0,2,4].map(i=>parseInt(hex.slice(i+1,i+3),16)/255).map(c=>c<=.04045?c/12.92:((c+.055)/1.055)**2.4);return .2126*v[0]+.7152*v[1]+.0722*v[2]}
@@ -166,7 +166,7 @@ function contrastRatio(a,b){const x=luminance(a),y=luminance(b);return (Math.max
 function contrastLabel(hex,bg){const r=contrastRatio(hex,bg);return r>=4.5?'AA texto normal ('+r.toFixed(2)+':1)':r>=3?'AA texto grande / componentes ('+r.toFixed(2)+':1)':'No alcanza AA ('+r.toFixed(2)+':1)'}
 function renderTerritoryWheel(routes,competitors){
  const host=$('[data-routes]');host.replaceChildren();
- const intro=document.createElement('div');intro.className='comparison-wheel-heading';intro.innerHTML='<h3>Mapa comparado: competencia + propuestas</h3><p>Los puntos numerados corresponden a las tres direcciones sugeridas; los puntos conectados conservan los vínculos cromáticos de cada marca.</p>';
+ const intro=document.createElement('div');intro.className='comparison-wheel-heading';intro.innerHTML='<h3>Mapa comparado: competencia + propuestas</h3><p>Los puntos numerados representan tres hipótesis de posicionamiento. Los puntos conectados conservan los vínculos cromáticos de cada marca competidora.</p>';
  const svg=svgEl('svg',{class:'chromatic-wheel proposal-wheel'});wheelBase(svg);
  competitors.forEach((brand,i)=>{
   const pts=brand.colors.map(c=>({color:c,point:polar(c.hex)}));
@@ -188,7 +188,7 @@ function renderTerritoryWheel(routes,competitors){
   const row=document.createElement('p');
   const dot=document.createElement('span');dot.className='proposal-dot';dot.style.background=route.main;
   const strong=document.createElement('strong');strong.textContent='0'+(i+1)+' · '+route.title;
-  row.append(dot,strong,document.createTextNode(' · '+route.main+(route.support?' + '+route.support:'')));legend.append(row);
+  row.append(dot,strong,document.createTextNode(' · territorio cromático orientativo'));legend.append(row);
  });
  const shell=document.createElement('div');shell.className='proposal-wheel-layout';shell.append(svg,legend);
  const cards=document.createElement('div');cards.className='territory-cards';
@@ -196,27 +196,22 @@ function renderTerritoryWheel(routes,competitors){
   const card=document.createElement('article');card.className='territory-card';
   const top=document.createElement('p');top.className='route-tag';top.textContent='VÍA 0'+(i+1)+' · '+r.tag;
   const title=document.createElement('h3');title.textContent=r.title;
-  const swatches=document.createElement('div');swatches.className='route-colors';
-  [{name:'Principal',hex:r.main},{name:'Apoyo',hex:r.support}].filter(x=>x.hex).forEach(x=>{
-   const sw=document.createElement('div');sw.className='route-color';sw.style.setProperty('--route-color',x.hex);
-   const label=document.createElement('span');label.textContent=x.name;
-   const code=document.createElement('strong');code.textContent=x.hex;
-   sw.append(label,code);swatches.append(sw);
-  });
+  const field=document.createElement('div');field.className='territory-field';
+  const marker=document.createElement('span');marker.className='territory-field-marker';marker.style.setProperty('--field-hue',r.h);
+  const fieldLabel=document.createElement('span');fieldLabel.textContent='DIRECCIÓN DE EXPLORACIÓN · NO ES UNA PALETA';
+  field.append(marker,fieldLabel);
   const pos=document.createElement('p');pos.textContent=r.position;
   const why=document.createElement('p');why.textContent=r.why;
-  const roles=document.createElement('p');roles.className='route-roles';roles.textContent='Proporción orientativa: '+r.roles;
-  const contrast=document.createElement('p');contrast.className='route-contrast';contrast.textContent='Contraste sobre blanco: '+contrastLabel(r.main,'#FFFFFF')+'. Sobre oscuro: '+contrastLabel(r.main,'#292729')+'.';
   const watch=document.createElement('p');watch.className='territory-watch';watch.textContent='Punto crítico: '+r.watch;
-  card.append(top,title,swatches,roles,pos,why,contrast,watch);cards.append(card);
+  card.append(top,title,field,pos,why,watch);cards.append(card);
  });
- const note=document.createElement('p');note.className='wheel-caption';note.textContent='La primera rueda muestra los tonos validados de cada competidor. Esta segunda superpone esos mismos tonos con un color principal por vía y, cuando aporta valor, un tono de apoyo. Son puntos de partida para diseñar, no paletas cerradas.';
+ const note=document.createElement('p');note.className='wheel-caption';note.textContent='La primera rueda sitúa los colores validados de la competencia y conserva la relación entre los tonos de cada marca. La segunda no prescribe combinaciones: sitúa tres territorios de posicionamiento para orientar la exploración posterior de matices, proporciones y sistemas cromáticos.';
  host.append(intro,shell,cards,note);
 }
 function analyze(){
  if(!form.reportValidity()){form.reportValidity();$('#briefing').scrollIntoView({behavior:'smooth'});return}
  const competitors=entries.map((entry,i)=>({entry,name:entry.querySelector('[data-name]').value.trim()||'Marca '+(i+1),colors:getColors(entry)})).filter(b=>b.colors.length);
- if(competitors.length<2){status.textContent='Añade y valida al menos dos marcas de referencia. Cada marca puede aportar hasta tres colores y un fondo opcional.';$('#competencia').scrollIntoView({behavior:'smooth'});return}
+ if(competitors.length<2){status.textContent='Añade y valida al menos dos marcas de referencia. Cada marca puede aportar dos tonos de identidad y un fondo opcional.';$('#competencia').scrollIntoView({behavior:'smooth'});return}
  const data=Object.fromEntries(new FormData(form).entries());
  const all=competitors.flatMap(b=>b.colors);
  const counts={};all.forEach(c=>{const f=family(c.hex);counts[f]=(counts[f]||0)+1});
