@@ -138,7 +138,7 @@ export default {
     if (declaredLength > MAX_BODY_BYTES) return json({ error: "La petición supera el tamaño permitido." }, 413, corsHeaders);
     let raw;
     try { raw = await request.text(); } catch { return json({ error: "No se ha podido leer la petición." }, 400, corsHeaders); }
-    if (raw.length > MAX_BODY_BYTES) return json({ error: "La petición supera el tamaño permitido." }, 413);
+    if (raw.length > MAX_BODY_BYTES) return json({ error: "La petición supera el tamaño permitido." }, 413, corsHeaders);
     let data;
     try { data = JSON.parse(raw); } catch { return json({ error: "El formato de la petición no es JSON válido." }, 400, corsHeaders); }
     const problem = validatePayload(data);
