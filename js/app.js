@@ -32,7 +32,7 @@ entries.forEach((entry,index)=>{
   try{
    const loaded=await window.TerritorioColor.loadLogo(f);
    if(current!==token){URL.revokeObjectURL(loaded.previewUrl);return}
-   const extracted=window.TerritorioColor.extractColors(loaded.image,'auto');
+   const extracted=window.TerritorioColor.extractColors(loaded.image,'exclude');
    if(url)URL.revokeObjectURL(url);url=loaded.previewUrl;
    preview.replaceChildren();const img=document.createElement('img');img.src=url;img.alt='Vista previa del logotipo';preview.append(img);title.textContent=f.name;
    entry.querySelector('[data-color-control]').hidden=false;
