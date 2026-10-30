@@ -80,3 +80,13 @@
 @media(max-width:850px){.wheel-layout,.territory-exploration{grid-template-columns:1fr}.wheel-layout .chromatic-wheel,.territory-wheel{max-width:380px}.wheel-legend{max-width:600px;margin:auto;width:100%}}
 @media(max-width:600px){.dual-color-grid{grid-template-columns:1fr}.wheel-layout{gap:15px}.chromatic-wheel{max-width:340px}.territory-exploration{gap:18px}.territory-card{padding:18px}.territory-card h3{font-size:21px}}
 @media print{.wheel-layout,.territory-exploration{grid-template-columns:1fr 1fr;gap:12px}.chromatic-wheel{max-width:290px}.territory-card{padding:10px}.territory-card>p:not(.route-tag){font-size:9px}.dual-color-grid{grid-template-columns:1fr 1fr}}
+
+
+/* Tres tonos de identidad y fondo opcional */
+.color-help{margin:0 0 13px;color:var(--muted);font-size:12px;line-height:1.55}
+.dual-color-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.dual-color{min-width:0}
+.dual-color[hidden]{display:none!important}
+.background-color{background:#f1eee8;border-style:dashed}
+.background-color .color-edit input[type=checkbox]{accent-color:var(--pink)}
+@media(max-width:600px){.dual-color-grid{grid-template-columns:1fr}}
