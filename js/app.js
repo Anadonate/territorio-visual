@@ -16,12 +16,28 @@ function setSlot(entry,slot,hex,source='Color estimado · confirma si forma part
  root.querySelector('[data-color-source]').textContent=source;
  root.querySelector('[data-include]').checked=true;
 }
+function setBackground(entry,hex,confidence){
+ const root=entry.querySelector('[data-background-control]');
+ if(!root)return;
+ if(!hexPattern.test(hex||'')){root.hidden=true;return}
+ root.hidden=false;
+ root.querySelector('[data-background-picker]').value=hex;
+ root.querySelector('[data-background-hex]').value=hex.toUpperCase();
+ root.querySelector('[data-background-include]').checked=false;
+ root.querySelector('[data-background-source]').textContent='Fondo detectado · confianza '+confidence+'. Inclúyelo solo si es parte de la identidad visual.';
+}
 function getColors(entry){
- return ['a','b'].map(slot=>{
+ const colors=['a','b','c'].map(slot=>{
   const root=entry.querySelector('[data-color-slot="'+slot+'"]');
   const hex=root.querySelector('[data-hex]').value.trim();
   return {hex:hex.toUpperCase(),included:root.querySelector('[data-include]').checked&&hexPattern.test(hex),slot};
  }).filter(x=>x.included);
+ const bg=entry.querySelector('[data-background-control]');
+ if(bg&&!bg.hidden&&bg.querySelector('[data-background-include]').checked){
+  const hex=bg.querySelector('[data-background-hex]').value.trim();
+  if(hexPattern.test(hex))colors.push({hex:hex.toUpperCase(),included:true,slot:'fondo'});
+ }
+ return colors;
 }
 entries.forEach((entry,index)=>{
  const file=entry.querySelector('[data-file]'),preview=entry.querySelector('[data-preview]'),title=entry.querySelector('[data-upload-title]');
@@ -36,19 +52,19 @@ entries.forEach((entry,index)=>{
    if(url)URL.revokeObjectURL(url);url=loaded.previewUrl;
    preview.replaceChildren();const img=document.createElement('img');img.src=url;img.alt='Vista previa del logotipo';preview.append(img);title.textContent=f.name;
    entry.querySelector('[data-color-control]').hidden=false;
-   const foreground=extracted.colors||[];
-   const primary=foreground[0]?.hex;
-   const second=extracted.background&&extracted.backgroundConfidence!=='ninguna'
-    ? extracted.background : foreground.find((c,i)=>i>0&&c.hex!==primary)?.hex;
-   if(primary)setSlot(entry,'a',primary,'Extraído de la forma o tipografía · confirma');
-   if(second)setSlot(entry,'b',second,extracted.background?'Detectado en el borde como posible fondo · confirma':'Segundo tono visible · confirma');
-   else{
-    const b=entry.querySelector('[data-color-slot="b"]');
-    b.querySelector('[data-hex]').value='';b.querySelector('[data-color-source]').textContent='No se ha detectado un segundo tono claro. Puedes añadirlo manualmente o dejarlo fuera.';
-    b.querySelector('[data-include]').checked=false;
-   }
-   const confidence=extracted.backgroundConfidence;
-   setStatus(entry,'Revisión necesaria: la detección es una estimación. El fondo solo se propone cuando el análisis de bordes encuentra un tono consistente ('+confidence+'). Activa o desactiva cada color según la identidad real.');
+   const foreground=(extracted.colors||[]).slice(0,3);
+   ['a','b','c'].forEach((slot,i)=>{
+    const color=foreground[i];
+    const root=entry.querySelector('[data-color-slot="'+slot+'"]');
+    if(color)setSlot(entry,slot,color.hex,'Tono '+(i+1)+' detectado en el logotipo · '+Math.round((color.share||0)*100)+'% del área analizada · confirma');
+    else{
+     root.querySelector('[data-hex]').value='';
+     root.querySelector('[data-color-source]').textContent='No se ha detectado un tono adicional. Puedes introducirlo manualmente.';
+     root.querySelector('[data-include]').checked=false;
+    }
+   });
+   setBackground(entry,extracted.background,extracted.backgroundConfidence);
+   setStatus(entry,'Se han propuesto hasta tres tonos del logotipo. El fondo se analiza por separado y aparece desactivado inicialmente. Revisa qué colores pertenecen realmente a la identidad de esta marca.');
   }catch(error){title.textContent='No se pudo leer el archivo';setStatus(entry,error.message||'Prueba con un PNG, JPEG o SVG válido.',true)}
  });
  entry.querySelectorAll('[data-color-slot]').forEach(root=>{
@@ -61,6 +77,12 @@ entries.forEach((entry,index)=>{
    setStatus(entry,'Código HEX validado.'); 
   });
  });
+ const bg=entry.querySelector('[data-background-control]');
+ if(bg){
+  const picker=bg.querySelector('[data-background-picker]'),hex=bg.querySelector('[data-background-hex]');
+  picker.addEventListener('input',()=>{hex.value=picker.value.toUpperCase();setStatus(entry,'Fondo ajustado manualmente. Decide si es un color corporativo o solo el fondo del archivo.')});
+  hex.addEventListener('change',()=>{const value=hex.value.trim();if(!hexPattern.test(value)){hex.setAttribute('aria-invalid','true');setStatus(entry,'Introduce un HEX válido para el fondo.',true);return}hex.removeAttribute('aria-invalid');picker.value=value;hex.value=value.toUpperCase()});
+ }
 });
 function family(hex){
  const c=window.TerritorioColor.toOklch(hex);
