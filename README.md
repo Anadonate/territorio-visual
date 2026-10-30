@@ -6,9 +6,9 @@ Territorio Visual es una herramienta de apoyo estratégico para definir la ident
 
 1. Completa el briefing: nombre, descripción, sector, público, valores e imagen que se quiere proyectar.
 2. Añade entre dos y seis logotipos de marcas competidoras o referentes.
-3. La herramienta estima un color dominante por imagen en el navegador; puedes revisar y corregir manualmente cada muestra.
+3. La herramienta estima dos tonos de identidad y un posible fondo por imagen en el navegador. Puedes validar, corregir o excluir cada muestra antes del análisis.
 4. Consulta las familias cromáticas presentes en la muestra y una lectura estratégica contextualizada.
-5. Explora tres rutas iniciales: afinidad con los códigos del sector, diferenciación matizada y territorio alternativo. Cada ruta incluye una paleta sugerida y una justificación para valorar.
+5. Explora tres territorios iniciales: afinidad con los códigos de la categoría, diferenciación matizada y posicionamiento alternativo. Se representan como direcciones de exploración, no como paletas cerradas.
 
 ## Criterio y límites
 
