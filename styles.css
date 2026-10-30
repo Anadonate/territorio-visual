@@ -111,3 +111,18 @@
 .territory-card>p:not(.route-tag){font-size:13px;line-height:1.58}
 @media(max-width:900px){.territory-cards{grid-template-columns:1fr}.territory-card h3{min-height:0}.proposal-wheel-layout{grid-template-columns:1fr}}
 @media print{.territory-cards{grid-template-columns:repeat(3,1fr)}.proposal-wheel-layout{grid-template-columns:1fr 1fr}}
+\n
+/* Territorio Visual · mejora de interpretación, validación y cierre */
+.sample-warning{margin:0 0 22px;padding:16px 19px;border-left:3px solid var(--gold);background:#f7f0e4;color:#514a42;font-size:14px;line-height:1.6}
+.route-roles,.route-contrast{padding-top:10px;border-top:1px solid var(--line);font-size:12px!important;line-height:1.55!important;color:#514a42!important}
+.guide-download{margin-top:30px;padding:clamp(24px,4vw,42px);background:#f1eee8;border:1px solid var(--line);border-radius:16px}
+.guide-download h3,.closing-thought h3{font:normal clamp(28px,3vw,38px)/1.12 var(--serif);margin:0 0 13px}
+.guide-download>p:not(.eyebrow),.closing-thought>p:not(.eyebrow){max-width:820px;font-size:16px;line-height:1.7;color:#5c5551}
+.guide-download .button{margin-top:8px}
+.closing-thought{margin-top:18px;padding:clamp(25px,4vw,44px);background:#e8eee7;border-radius:16px}
+.closing-thought h3 em{color:var(--pink);font-weight:normal}
+.closing-thought>p:last-child{margin-bottom:0}
+.name-field input::placeholder{color:#aaa39a;font-weight:400;font-style:italic}
+.name-field input:focus-visible,.field input:focus-visible,.field textarea:focus-visible,.color-edit input:focus-visible,.upload-zone:focus-visible,.button:focus-visible,.text-button:focus-visible{outline:3px solid var(--pink);outline-offset:3px}
+@media(max-width:600px){.guide-download,.closing-thought{padding:22px}.guide-download .button{width:100%}}
+@media print{.guide-download,.closing-thought{break-inside:avoid}.guide-download .button{display:none}}
