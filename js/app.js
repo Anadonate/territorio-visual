@@ -189,10 +189,15 @@ function renderTerritoryWheel(routes,competitors){
  });
  const legend=document.createElement('div');legend.className='proposal-wheel-legend';
  competitors.forEach((brand,i)=>{
-  const row=document.createElement('p');row.innerHTML='<strong>'+(i+1)+'. '+brand.name+'</strong> · '+brand.colors.map(c=>c.hex).join(' / ');legend.append(row);
+  const row=document.createElement('p');
+  const strong=document.createElement('strong');strong.textContent=(i+1)+'. '+brand.name;
+  row.append(strong,document.createTextNode(' · '+brand.colors.map(c=>c.hex).join(' / ')));legend.append(row);
  });
- routes.forEach((r,i)=>{
-  const row=document.createElement('p');row.innerHTML='<span class="proposal-dot" style="background:'+r.main+'"></span><strong>0'+(i+1)+' · '+r.title+'</strong> · '+r.main+(r.support?' + '+r.support:'');legend.append(row);
+ routes.forEach((route,i)=>{
+  const row=document.createElement('p');
+  const dot=document.createElement('span');dot.className='proposal-dot';dot.style.background=route.main;
+  const strong=document.createElement('strong');strong.textContent='0'+(i+1)+' · '+route.title;
+  row.append(dot,strong,document.createTextNode(' · '+route.main+(route.support?' + '+route.support:'')));legend.append(row);
  });
  const shell=document.createElement('div');shell.className='proposal-wheel-layout';shell.append(svg,legend);
  const cards=document.createElement('div');cards.className='territory-cards';
