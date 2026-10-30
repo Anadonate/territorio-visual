@@ -1,0 +1,8 @@
+name = "territorio-visual-ai"
+main = "src/index.js"
+compatibility_date = "2026-10-30"
+
+[vars]
+# Sustituye por el origen exacto de GitHub Pages cuando despliegues:
+# ALLOWED_ORIGINS = "https://anadonate.github.io"
+# OPENAI_MODEL se configura como variable en Cloudflare una vez validado el modelo disponible en tu proyecto.
