@@ -134,3 +134,17 @@
 .territory-field-marker{position:absolute;z-index:1;width:25px;height:25px;border-radius:50%;left:50%;top:50%;transform:translate(-50%,-50%);background:hsl(var(--field-hue) 42% 46%);border:4px solid #fff;box-shadow:0 0 0 1px #29272940}
 .territory-field>span:last-child{position:relative;z-index:2;font-size:9px;letter-spacing:.1em;font-weight:800;color:#5c5551}
 @media(max-width:600px){.territory-field{min-height:88px}}
+
+/* Resultados generados por el consultor estratégico */
+.ai-executive-summary,.ai-fit-panel{margin:22px 0;padding:28px;background:var(--white);border:1px solid var(--line);border-radius:14px}
+.ai-executive-summary h3,.ai-fit-panel h3{font:normal 27px/1.2 var(--serif);margin:0 0 12px}
+.ai-executive-summary>p:last-child,.ai-fit-panel>p{font-size:16px;line-height:1.7;color:#57514c;margin:0}
+.territory-detail{margin-top:18px}
+.territory-detail h4,.ai-implications h4{font-size:13px;letter-spacing:.04em;margin:0 0 7px}
+.territory-detail p{font-size:15px;line-height:1.65;color:#5c5551;margin:0}
+.ai-result-list{margin:8px 0 0;padding-left:20px;color:#5c5551;font-size:15px;line-height:1.65}
+.ai-implications{margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}
+.ai-fit-panel{background:#f1eee7}
+.ai-fit-panel [data-ai-tensions]:empty{display:none}
+button[disabled]{opacity:.65;cursor:wait;transform:none}
+@media(max-width:600px){.ai-executive-summary,.ai-fit-panel{padding:21px}.ai-executive-summary h3,.ai-fit-panel h3{font-size:24px}}
